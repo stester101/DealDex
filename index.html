@@ -1,0 +1,2750 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
+<title>Deal Dex — Security Council Field Unit</title>
+<link href="https://fonts.googleapis.com/css2?family=Silkscreen:wght@400;700&family=VT323&display=swap" rel="stylesheet"/>
+<script crossorigin src="https://unpkg.com/react@18.2.0/umd/react.production.min.js"></script>
+<script crossorigin src="https://unpkg.com/react-dom@18.2.0/umd/react-dom.production.min.js"></script>
+<script src="https://unpkg.com/@babel/standalone@7.23.9/babel.min.js"></script>
+<style>
+:root{
+  --night:#0c1c17; --shell:#123329; --shellHi:#1c4638; --bezel:#081511;
+  --lcd:#bcd6a6; --lcdMid:#9fbf88; --ink:#20351f; --inkDim:#4b6b45;
+  --send:#37b57e; --amber:#e0a53c; --stamp:#c0473c; --cream:#efe9d8; --gold:#d4a13a;
+}
+*{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
+html,body{margin:0;padding:0;}
+body{min-height:100vh;background:radial-gradient(120% 120% at 50% -10%, var(--shellHi), var(--night));
+  display:flex;justify-content:center;align-items:flex-start;padding:6px 4px;
+  font-family:'VT323',ui-monospace,monospace;color:var(--ink);}
+button{font-family:'VT323',monospace;cursor:pointer;}
+button:disabled{cursor:not-allowed;filter:grayscale(.4) brightness(.9);}
+.silk{font-family:'Silkscreen',monospace;}
+/* ---- device shell ---- */
+.shell{width:100%;max-width:520px;background:var(--shell);border-radius:28px;padding:14px;
+  box-shadow:0 30px 60px rgba(0,0,0,.55), inset 0 2px 0 rgba(255,255,255,.06);border:2px solid var(--bezel);}
+.lcd{position:relative;background:linear-gradient(160deg,var(--lcd),var(--lcdMid));border-radius:14px;
+  border:3px solid var(--bezel);overflow:hidden;min-height:440px;box-shadow:inset 0 0 26px rgba(20,40,20,.35);display:flex;flex-direction:column;}
+.lcd::after{content:"";position:absolute;inset:0;pointer-events:none;z-index:50;
+  background:repeating-linear-gradient(0deg, rgba(10,30,15,.06) 0, rgba(10,30,15,.06) 1px, transparent 1px, transparent 3px);
+  mix-blend-mode:multiply;}
+.led{width:9px;height:9px;border-radius:50%;background:var(--send);box-shadow:0 0 8px var(--send);animation:blink 2.4s infinite;}
+@keyframes blink{0%,92%,100%{opacity:1}95%{opacity:.25}}
+.press{transition:transform .05s, filter .1s;}
+.press:active{transform:translateY(1px) scale(.98);}
+.press:hover{filter:brightness(1.06);}
+/* ---- generic UI ---- */
+.pad{padding:12px;}
+.panel{background:rgba(255,255,255,.28);border:2px solid var(--ink);border-radius:10px;padding:8px 10px;}
+.panelD{background:rgba(20,40,25,.16);border:2px solid var(--ink);border-radius:10px;padding:8px 10px;}
+.pill{color:#fff;border-radius:4px;padding:0 6px;font-size:13px;white-space:nowrap;display:inline-block;}
+.btn{background:var(--send);color:#08130f;border:2px solid var(--ink);border-radius:9px;padding:9px 14px;
+  font-family:'Silkscreen',monospace;font-size:11px;letter-spacing:1px;width:100%;}
+.bsm{border:2px solid var(--ink);border-radius:8px;padding:7px 9px;font-size:17px;line-height:1.05;color:#08130f;}
+.overlay{position:absolute;left:8px;right:8px;bottom:8px;top:8px;background:var(--lcd);border:3px solid var(--ink);
+  border-radius:10px;padding:12px;box-shadow:0 8px 24px rgba(0,0,0,.4);z-index:30;display:flex;flex-direction:column;overflow:hidden;}
+.overlay>*{flex:none;}
+.overlay .scroll{flex:1 1 auto;overflow-y:auto;min-height:0;}
+.card{border-radius:14px;padding:10px;color:#20321f;position:relative;overflow:hidden;
+  box-shadow:0 6px 18px rgba(0,0,0,.35), inset 0 0 0 3px rgba(255,255,255,.35);}
+.card::before{content:"";position:absolute;inset:0;background:repeating-linear-gradient(115deg,rgba(255,255,255,.10) 0 8px,transparent 8px 20px);pointer-events:none;}
+.card .cardframe{background:rgba(255,255,255,.82);border-radius:10px;padding:9px;position:relative;z-index:1;border:2px solid rgba(0,0,0,.25);}
+.card .art{border-radius:8px;height:120px;display:flex;align-items:center;justify-content:center;border:2px solid rgba(0,0,0,.3);position:relative;overflow:hidden;}
+.statb{height:9px;border-radius:5px;background:rgba(0,0,0,.14);overflow:hidden;}
+.statb>i{display:block;height:100%;border-radius:5px;}
+.holo{position:absolute;inset:0;background:linear-gradient(125deg,transparent 30%,rgba(255,255,255,.5) 48%,transparent 62%);
+  background-size:250% 250%;animation:holoShine 3.5s linear infinite;pointer-events:none;mix-blend-mode:screen;}
+@keyframes holoShine{0%{background-position:120% 0}100%{background-position:-40% 0}}
+.fullov{position:absolute;inset:8px;background:var(--lcd);border:3px solid var(--ink);border-radius:10px;
+  padding:12px;z-index:30;overflow-y:auto;}
+.toast{position:absolute;top:12px;left:50%;transform:translateX(-50%);background:var(--ink);color:var(--lcd);
+  padding:6px 12px;border-radius:8px;font-size:16px;max-width:90%;text-align:center;z-index:60;animation:tin .25s ease-out;}
+@keyframes tin{from{opacity:0;transform:translateX(-50%) translateY(-8px)}to{opacity:1;transform:translateX(-50%) translateY(0)}}
+.stampbox{position:absolute;top:26px;right:18px;transform:rotate(-14deg);border:3px solid var(--stamp);color:var(--stamp);
+  font-family:'Silkscreen',monospace;font-size:12px;padding:3px 8px;border-radius:4px;opacity:.75;letter-spacing:2px;}
+/* ---- overworld ---- */
+.vp{position:relative;overflow:hidden;border:2px solid var(--ink);border-radius:8px;background:#2f5a3f;margin:0 auto;}
+.lcd>.pad,.lcd>.screen{flex:1;display:flex;flex-direction:column;}
+.world{position:absolute;transition:transform .13s linear;will-change:transform;}
+.tile{position:absolute;display:flex;align-items:center;justify-content:center;}
+.spr{position:absolute;display:flex;align-items:center;justify-content:center;z-index:5;transition:transform .13s linear, left .13s linear, top .13s linear;}
+.bob{animation:bob .55s ease-in-out infinite;}
+@keyframes bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-2px)}}
+.flo{animation:flo 3s ease-in-out infinite;}
+@keyframes flo{0%,100%{transform:translateY(0)}50%{transform:translateY(-5px)}}
+.wat{animation:wat 2.6s ease-in-out infinite;}
+@keyframes wat{0%,100%{filter:brightness(1)}50%{filter:brightness(1.16)}}
+.tint{position:absolute;inset:0;pointer-events:none;z-index:8;transition:background 1s;}
+.rain{position:absolute;inset:0;pointer-events:none;z-index:9;opacity:.35;
+  background:repeating-linear-gradient(75deg, transparent 0 7px, rgba(180,210,255,.5) 7px 8px);
+  animation:rainm .5s linear infinite;}
+@keyframes rainm{from{background-position:0 0}to{background-position:-40px 40px}}
+/* ---- battle fx ---- */
+.shake{animation:shake .35s;}
+@keyframes shake{0%,100%{transform:translateX(0)}20%{transform:translateX(-6px)}40%{transform:translateX(6px)}60%{transform:translateX(-4px)}80%{transform:translateX(4px)}}
+.shake{animation:shake .3s;}
+.shakeBig{animation:shakeB .4s;}
+@keyframes shakeB{0%,100%{transform:translate(0,0)}15%{transform:translate(-9px,3px)}30%{transform:translate(9px,-3px)}45%{transform:translate(-7px,2px)}60%{transform:translate(7px,-2px)}75%{transform:translate(-4px,1px)}}
+.hitflash{animation:hitf .3s;}
+@keyframes hitf{0%,100%{filter:none}50%{filter:brightness(3) saturate(0)}}
+.faintanim{animation:faint .6s forwards;}
+@keyframes faint{to{transform:translateY(26px);opacity:0}}
+.growanim{animation:grow .8s;}
+@keyframes grow{0%{transform:scale(.4);filter:brightness(4)}60%{transform:scale(1.25)}100%{transform:scale(1)}}
+.spark{position:absolute;width:8px;height:8px;border-radius:50%;pointer-events:none;z-index:40;animation:spk .55s forwards;}
+@keyframes spk{from{opacity:1;transform:translate(0,0) scale(1)}to{opacity:0;transform:translate(var(--dx),var(--dy)) scale(.2)}}
+.swirl{position:absolute;inset:0;z-index:55;pointer-events:none;
+  background:conic-gradient(var(--ink) 0 25%, transparent 25% 50%, var(--ink) 50% 75%, transparent 75%);
+  animation:swl .7s ease-in forwards;}
+@keyframes swl{from{transform:rotate(0) scale(0);opacity:.95}to{transform:rotate(720deg) scale(3);opacity:0}}
+.hpshine{position:relative;overflow:hidden;}
+.hpshine::after{content:"";position:absolute;top:0;left:-40%;width:30%;height:100%;background:rgba(255,255,255,.35);
+  transform:skewX(-20deg);animation:shine 2.4s infinite;}
+@keyframes shine{from{left:-40%}to{left:120%}}
+.catchwob{animation:wob 1s ease-in-out;}
+@keyframes wob{0%,100%{transform:rotate(0)}20%{transform:rotate(-18deg)}40%{transform:rotate(14deg)}60%{transform:rotate(-9deg)}80%{transform:rotate(5deg)}}
+.lvlflash{animation:lvf .7s;}
+@keyframes lvf{0%,100%{box-shadow:none}50%{box-shadow:0 0 22px 6px rgba(212,161,58,.8)}}
+.dpadb{background:var(--bezel);color:var(--cream);border:none;border-radius:7px;font-size:19px;width:44px;height:40px;}
+.abb{width:44px;height:44px;border-radius:50%;background:var(--stamp);color:#fff;border:2px solid rgba(0,0,0,.3);
+  font-family:'Silkscreen',monospace;font-size:13px;box-shadow:inset 0 -3px 0 rgba(0,0,0,.3);}
+.menurow{display:flex;justify-content:space-between;align-items:center;background:rgba(255,255,255,.3);
+  border:2px solid var(--ink);border-radius:8px;padding:6px 9px;margin-bottom:5px;font-size:17px;}
+.tabb{flex:1;border:2px solid var(--ink);border-radius:7px;padding:4px 2px;font-size:14px;background:rgba(255,255,255,.25);color:var(--ink);}
+.tabb.on{background:var(--ink);color:var(--lcd);}
+::-webkit-scrollbar{width:7px}::-webkit-scrollbar-thumb{background:var(--inkDim);border-radius:4px}
+@media (prefers-reduced-motion: reduce){*{animation-duration:.01ms !important;transition-duration:.01ms !important;}}
+@media (max-width:430px){.lcd{min-height:420px}}
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/plain" id="gamesrc">
+const {useState,useEffect,useRef,useMemo,useCallback} = React;
+
+/* ================= CORE HELPERS ================= */
+const R=Math.random, ri=(a,b)=>a+Math.floor(R()*(b-a+1)), pick=a=>a[Math.floor(R()*a.length)],
+  clamp=(v,l,h)=>Math.max(l,Math.min(h,v)), deep=o=>JSON.parse(JSON.stringify(o));
+const cap=s=>s.charAt(0).toUpperCase()+s.slice(1);
+
+/* ---- tiny synth ---- */
+let AC=null, SND=true;
+function tone(f,d=0.08,type="square",v=0.05,when=0){ try{
+  if(!AC) AC=new (window.AudioContext||window.webkitAudioContext)();
+  if(!SND) return;
+  const o=AC.createOscillator(),g=AC.createGain();
+  o.type=type;o.frequency.value=f;g.gain.value=v;
+  o.connect(g);g.connect(AC.destination);
+  const t=AC.currentTime+when;o.start(t);
+  g.gain.setValueAtTime(v,t);g.gain.exponentialRampToValueAtTime(0.001,t+d);
+  o.stop(t+d+0.02);}catch(e){} }
+const sfx={
+  blip:()=>tone(660,.05), sel:()=>tone(880,.06), back:()=>tone(330,.06),
+  hit:()=>{tone(180,.09,"sawtooth",.06)}, crit:()=>{tone(140,.14,"sawtooth",.08);tone(90,.14,"sawtooth",.06,.05)},
+  heal:()=>{[520,660,780].forEach((f,i)=>tone(f,.09,"triangle",.05,i*.07))},
+  faint:()=>{[400,300,200,120].forEach((f,i)=>tone(f,.1,"square",.05,i*.08))},
+  catch1:()=>tone(500,.06,"square",.06), caught:()=>{[523,659,784,1046].forEach((f,i)=>tone(f,.12,"triangle",.06,i*.1))},
+  lvl:()=>{[659,784,988,1318].forEach((f,i)=>tone(f,.1,"triangle",.06,i*.08))},
+  bstart:()=>{[220,330,440,550,660].forEach((f,i)=>tone(f,.07,"square",.05,i*.05))},
+  coin:()=>{tone(988,.05,"triangle",.06);tone(1319,.09,"triangle",.06,.05)},
+  chip:()=>{[392,523,659,784,1046].forEach((f,i)=>tone(f,.13,"triangle",.07,i*.1))},
+};
+
+/* ================= TYPES ================= */
+const TYPES=["Dust","Indica","Sativa","Hybrid","Kush","Haze","Diesel","Exotic"];
+const TCOL={Dust:"#9a8f77",Indica:"#6f7bd6",Sativa:"#e0733c",Hybrid:"#3fae7a",Kush:"#8a6bd0",Haze:"#5aa7c9",Diesel:"#c9963a",Exotic:"#d4a13a"};
+const TGLYPH={Dust:"🌿",Indica:"🌙",Sativa:"⚡",Hybrid:"🍃",Kush:"🏰",Haze:"🌫️",Diesel:"⛽",Exotic:"🌋"};
+const CHART={};
+TYPES.forEach(a=>{CHART[a]={};TYPES.forEach(d=>CHART[a][d]=1);});
+[["Sativa","Hybrid"],["Hybrid","Indica"],["Indica","Sativa"],
+ ["Kush","Diesel"],["Diesel","Haze"],["Haze","Kush"]].forEach(([a,b])=>{CHART[a][b]=2;CHART[b][a]=.5;});
+TYPES.forEach(a=>{ if(a!=="Exotic") CHART[a]["Exotic"]=.75; });
+CHART["Dust"]["Exotic"]=.5;
+TYPES.forEach(d=>{ if(d!=="Exotic") CHART["Exotic"][d]=1.25; });
+/* cross-links for depth */
+CHART["Haze"]["Indica"]=1.5; CHART["Indica"]["Haze"]=.75;
+CHART["Diesel"]["Sativa"]=1.5; CHART["Sativa"]["Diesel"]=.75;
+CHART["Kush"]["Hybrid"]=1.5; CHART["Hybrid"]["Kush"]=.75;
+function typeMult(mvType,defTypes){ return defTypes.reduce((m,t)=>m*CHART[mvType][t],1); }
+
+/* ---- status conditions ---- */
+const STATUS={
+  CLK:{name:"Couch-locked",col:"#b78a3c",desc:"May not move; speed halved."},
+  GRN:{name:"Greening out",col:"#7a4fb0",desc:"Loses HP each turn."},
+  DAZ:{name:"Dazed",col:"#6f7bd6",desc:"Fast asleep for a bit."},
+  MUN:{name:"Munchies",col:"#c0473c",desc:"Attack halved; snacks on own HP."},
+};
+const STAGE_M=s=>s>=0?(2+s)/2:2/(2-s);
+const STATUS_CURE={CLK:"Deep Heat",GRN:"Bottled Water",DAZ:"Strong Coffee",MUN:"Snack Box"};
+/* NOTE(design, 2026-07-08): statuses currently persist indefinitely until cured by item or full-heal (matches mainline Pokemon). User flagged that couch-locked staying on after the battle ended felt surprising. Left as-is per request; revisit if it should instead wear off after N turns or on leaving battle. */
+/* ================= MOVES =================
+   cat: P physical, S special, T status
+   fx: st{id,ch} status | buff{stat:+n} self | deb{stat:-n,ch} target | heal f | drain f |
+       recoil f | hits[a,b] | flinch n | crit n | weather id | prot | leech | cureSelf |
+       priority via pri | ohko? no. */
+const MOVES={};
+function M(id,name,type,cat,pow,acc,pp,pri,fx,desc){MOVES[id]={id,name,type,cat,pow,acc,pp,pri:pri||0,fx:fx||{},desc:desc||""};}
+
+/* ---- signature & lore moves (hand-written) ---- */
+M("strongnod","Strong Nod","Indica","T",0,100,15,0,{buff:{def:1,sd:1}},"Kettle's signature. Devastatingly affirming.");
+M("bangbeach","Banger on the Beach","Sativa","S",75,100,12,0,{},"Drug smoke, not gay sex. (non-sexual)");
+M("eaglelands","Eagle Has Landed","Diesel","P",115,85,5,0,{recoil:.25},"The big drop. Biggest yet. Reckless.");
+M("volcanorip","Volcano Rip","Exotic","S",95,95,8,0,{st:{id:"MUN",ch:20}},"The prized possession does work.");
+M("threatmid","Threat Level: Midnight","Haze","S",90,90,8,0,{deb:{sd:-1,ch:30}},"A tete-a-tete of devastating force.");
+M("maxchill","Maximus Chillius","Indica","T",0,100,8,0,{heal:.5},"Maximum chill. Restores half HP.");
+M("bluntfav","Blunt Favour","Hybrid","T",0,100,10,0,{heal:.33,cureSelf:1},"A little treat. Cures status.");
+M("nonsexual","Non-Sexual Disclaimer","Dust","T",0,100,20,0,{buff:{def:2}},"Just to be very clear. Braces hard.");
+M("remindme","Remind Me","Haze","T",0,90,15,0,{deb:{acc:-1,ch:100}},"Cryptic. The foe forgets what it was doing.");
+M("bowlround","Bowl Round","Dust","P",50,100,30,0,{},"Pops over for a bit. Reliable.");
+M("bowlover","Bowl Over","Dust","P",70,100,20,0,{flinch:15},"Pops over with intent.");
+M("fieldadmin","Field Admin","Dust","T",0,100,15,0,{buff:{atk:1}},"Sorts the admin. Sharpens up.");
+M("quizround","Quiz Round","Haze","S",60,100,20,0,{deb:{sa:-1,ch:20}},"Ten questions, no conferring.");
+M("subsequent","Subsequent Episode","Haze","S",80,100,10,0,{},"Extra funny on the replay.");
+M("wakeher","I Wouldn't Wake Her Up","Indica","T",0,75,10,0,{st:{id:"DAZ",ch:100}},"Took Oli ten minutes to get there.");
+M("agm","#AGM Vote","Dust","T",0,100,10,0,{buff:{atk:1,def:1}},"Motion carried. The Council rises.");
+M("seatbelt","Seatbelt Bleep","Diesel","T",0,90,15,0,{st:{id:"CLK",ch:100}},"It just keeps bleeping until you comply.");
+M("honesty","Honesty Box","Kush","T",0,100,10,0,{buff:{sd:2}},"Nobody's watching. Pay anyway.");
+M("dewfall","Scope Dew","Haze","T",0,100,10,0,{weather:"mist"},"Sea mist rolls in. Optics ruined.");
+M("heatwave","Too Much Heat","Sativa","T",0,100,10,0,{weather:"heat"},"Been building all week.");
+M("drizzle","Deal Drizzle","Haze","T",0,100,10,0,{weather:"rain"},"Van round cancelled.");
+M("andromeda","Andromeda Beam","Haze","S",110,80,5,0,{crit:1},"Best thing you've ever seen.");
+M("gibbous","Maximum Gibbous","Haze","S",85,100,10,0,{},"They haven't even done the shadow properly.");
+M("bigmoon","Pockets of Big Moon","Haze","T",0,100,10,0,{deb:{atk:-1,sa:-1,ch:100}},"Keeps us all in line.");
+M("parthree","Par 3 Pissabout","Diesel","P",55,95,25,0,{hits:[2,3]},"A quick 9. Hits 2-3 times.");
+M("lbtdrive","LBT Drive","Diesel","P",90,95,10,0,{},"Smacks it clean off the first tee.");
+M("jacketclaim","Jacket Claim","Exotic","P",100,90,5,0,{buff:{atk:1}},"The famous LBT Jacket is up for grabs.");
+M("bunkersped","Sped-Up Bunker","Diesel","P",65,90,15,1,{},"Faster than it happened. Priority.");
+M("caddy","Caddy Support","Dust","T",0,100,15,0,{buff:{spe:1}},"Reads the green for you.");
+M("sevenIron","7-Iron Shot","Diesel","P",80,100,15,0,{},"Found it. Never lost it again.");
+M("windowround","Window Round","Kush","P",60,100,25,0,{},"In and around Deal today.");
+M("squeegeesnap","Squeegee Snap","Kush","P",75,95,15,0,{deb:{def:-1,ch:30}},"Streak-free finish.");
+M("ladderlock","Ladder Lock","Kush","T",0,100,15,0,{buff:{def:1,atk:1}},"Three points of contact at all times.");
+M("vanbreak","Van Breakdown","Diesel","P",120,70,5,0,{recoil:.33},"She's gone again. Massive if it lands.");
+M("benbags","Benbags Delivery","Diesel","P",85,100,10,0,{},"They call me Benbags.");
+M("popo","Po Po Patrol","Dust","T",0,100,10,0,{deb:{spe:-2,ch:100}},"Left the J at the annexe. Everyone freeze.");
+M("pokerface","Poker Face","Dust","T",0,100,15,0,{buff:{sd:1,def:1}},"Reaching for a card. Allegedly.");
+M("allin","All-In Shove","Diesel","P",130,75,5,0,{recoil:.33},"Rebuys first hour only.");
+M("bluff","Stone Cold Bluff","Haze","T",0,85,15,0,{deb:{atk:-2,ch:100}},"He thought he was reaching for a card!");
+M("redriver","Red River Flow","Hybrid","S",70,100,15,0,{drain:.5},"Let the chips flow. Drains the pot.");
+M("chiplead","Chip Lead","Dust","T",0,100,10,0,{buff:{atk:1,sa:1}},"Stacks doing the talking.");
+M("quadz","Quadzilla Slam","Kush","P",100,90,8,0,{},"Leg day. Every day.");
+M("gympump","Gym Pump","Kush","T",0,100,15,0,{buff:{atk:2}},"More pumped than a tractor's tyre.");
+M("cheeseroll","Cheese Roll","Indica","P",80,95,12,0,{st:{id:"CLK",ch:20}},"Cash is king. Card is Queen.");
+M("exodus","Exodus Funk","Indica","S",85,100,10,0,{st:{id:"MUN",ch:20}},"The old Deal terror. You'll smell it first.");
+M("popeblessing","Papal Blessing","Haze","T",0,100,8,0,{heal:.5,cureSelf:1},"The Pope abides.");
+M("butcherscut","Butcher's Cut","Diesel","P",95,90,10,0,{crit:1},"Prime. High critical ratio.");
+M("elrondcouncil","Council of Elrond","Haze","T",0,100,10,0,{buff:{sa:1,sd:1}},"One does not simply fold pre-flop.");
+M("daddyrule","House Rules","Exotic","T",0,100,8,0,{deb:{atk:-1,def:-1,ch:100}},"The Daddy decides the format. No loop.");
+M("dandini","Dandini Flourish","Sativa","S",90,95,10,0,{buff:{spe:1}},"Touch and love, love and touch.");
+M("telescope","Telescope Sight","Haze","T",0,100,15,0,{buff:{acc:1,sa:1}},"Bring the knockers. Locks on.");
+M("stargayze","Planetary Parade","Haze","S",95,100,8,0,{},"The planets are doing a parade.");
+M("simsuspect","Simulation Glitch","Exotic","S",80,100,12,0,{deb:{acc:-1,ch:20}},"A bit too on the nose, that.");
+M("onthenose","Too On The Nose","Exotic","T",0,100,10,0,{deb:{sa:-2,ch:100}},"Not even trying to hide how programmed it is.");
+M("sidequest","Random Side Quest","Dust","T",0,100,10,1,{prot:1},"A spanner appears. Protects this turn.");
+M("weathergod","Weather Control","Exotic","T",0,100,5,0,{weather:"clear",heal:.25},"OK so I may actually control the weather.");
+M("lotto29","Lucky 29","Dust","S",29,100,20,1,{},"29 is key. Part of the starter pack. Priority.");
+M("clubcard","Clubcard Swipe","Dust","P",60,100,20,0,{},"Every little helps.");
+M("nandos","Cheeky Nando's","Sativa","T",0,100,10,0,{heal:.5},"Only if it isn't a euphemism.");
+M("roastdinner","L-Dog Roast","Indica","T",0,100,8,0,{heal:.6,st:{id:"MUN",ch:30,self:1}},"She's cooking. Big heal, risky comedown.");
+M("brownonion","Default Onion","Dust","P",65,100,20,0,{},"One brown onion. Obviously. The default.");
+M("dibbles","Dibbles Nibbles","Indica","P",70,100,15,0,{drain:.5},"Dibbles get the nibbles. Drains HP.");
+M("toastylap","Toasty Lapdance","Sativa","S",75,90,12,0,{deb:{def:-1,ch:40}},"Not the beach one. The other footage.");
+M("edmatty","Ed Matty Energy","Sativa","T",0,100,10,0,{buff:{spe:2}},"Acts exactly how you'd act if you cared less.");
+M("lidlpeck","Lidl Orville Peck","Haze","S",70,100,15,0,{st:{id:"DAZ",ch:15}},"A budget version of you, singing.");
+M("kylienight","Kylie Night","Sativa","S",85,100,10,0,{},"Can't get you out of my head. Ever.");
+M("craigsaid","That's What Craig Said","Dust","S",70,100,15,0,{flinch:20},"Delivered *exactly* how you'd wish.");
+M("herbalzoom","Head of Herbal Remedies","Haze","T",0,100,10,0,{buff:{sa:2}},"Forgot to change the Zoom name for therapy.");
+M("barham","Barham Pronunciation","Dust","S",60,100,20,0,{deb:{sd:-1,ch:30}},"Sounds exactly like you. Uncanny.");
+M("crimea","Crimea River","Haze","S",80,100,12,0,{},"By Michael Bublé. Devastating croon.");
+M("chimnea","Annexed Chimnea","Sativa","S",75,100,15,0,{st:{id:"GRN",ch:20}},"Smoky. Property of the Council now.");
+M("wrestle5","Wrestle Five","Kush","P",25,90,15,0,{hits:[5,5]},"Five in five minutes. The extra minute's for doors.");
+M("kickdoors","Kick Doors Down","Kush","P",85,90,12,0,{},"The necessary preamble.");
+M("eden","Forbidden Fruit","Hybrid","S",90,95,10,0,{drain:.33},"One snack shut the whole garden down.");
+M("gardenprop","Garden Proprietor","Hybrid","T",0,100,10,0,{buff:{def:1},heal:.25},"The Annexe garden: blueprint for efficiency.");
+M("smokespot","Pre-Golf Smoke Spot","Hybrid","T",0,100,15,0,{buff:{sa:1}},"Usual spot. See you 6:30.");
+M("etaping","ETA Ping","Dust","T",0,100,20,1,{buff:{spe:1}},"Leaving now. I said leaving now. Omw.");
+M("softreset","Soft Reset","Dust","T",0,100,5,0,{heal:1,onceOnly:1},"Three-hour blocks. Full recovery, once.");
+M("checkin","Checking In","Dust","T",0,100,15,0,{heal:.25,cureSelf:1},"How you feeling G? xx");
+M("volcanoprime","Eruption Protocol","Exotic","S",140,90,5,0,{recoil:.25},"The bag fills. The room changes.");
+M("jerusalemcall","Jerusalem Call","Exotic","P",120,85,5,0,{},"Just stopping off to grab Jerusalem.");
+M("eaglescreech","Eagle Screech","Diesel","S",100,95,8,0,{deb:{def:-1,ch:30}},"Circling the memorial plaque.");
+M("greenjacket","Green Jacket Aura","Exotic","T",0,100,5,0,{buff:{atk:1,def:1,sa:1,sd:1}},"Forget those Xbox skills. Real golf time.");
+M("caesarline","Et Tu, Bruv?","Exotic","P",95,100,8,0,{crit:1},"Delivered at the memorial plaque.");
+M("channelmist","Channel Mist","Haze","S",80,100,12,0,{weather:"mist"},"Rolls in off the strait mid-attack.");
+M("dovercliff","White Cliff Drop","Kush","P",110,80,5,0,{},"Gravity-assisted. Huge but wild.");
+M("sandwichclub","Club Sandwich","Dust","P",45,100,20,0,{hits:[2,2]},"Triple-decked. Hits twice.");
+M("tilgateroots","Tilgate Roots","Hybrid","T",0,90,10,0,{leech:1},"The forest keeps a little of everything.");
+M("campfire","Campfire Story","Sativa","S",65,100,20,0,{st:{id:"DAZ",ch:20}},"Logs and kindling by reception.");
+M("glampluxe","Off-Grid Glamp","Indica","T",0,100,10,0,{heal:.5,buff:{sd:1}},"No electricity. Full recharge.");
+M("stagdo","Speed Stagging","Diesel","P",75,100,15,1,{},"Some might call it last minute. Priority.");
+M("bestman","Best Man Speech","Sativa","S",85,95,10,0,{flinch:10},"The circle of trust widens.");
+M("mysticnod","The Fold of Lines","Exotic","T",0,100,8,0,{buff:{sa:1,sd:1,spe:1}},"A few of the bigger players already in the fold.");
+M("richter","7.5 Richter","Exotic","P",105,90,8,0,{},"Got done over by the ripples.");
+M("connectdots","Connect The Dots","Haze","T",0,100,10,0,{buff:{acc:2}},"Just in time. Took the edge off disaster.");
+M("d4","Door Number Four","Exotic","S",120,80,5,0,{},"There's exactly one way to open it. #D4");
+M("rotherham","Rotherham Hole-In-One","Diesel","P",1,90,5,0,{ohkoLike:1},"Automatically makes you the local MP.");
+M("mpdemand","Demand Helicopter","Exotic","T",0,100,8,0,{deb:{atk:-1,sa:-1,ch:100}},"Back off his personal life or there'll be trouble.");
+M("interviews","Press Interviews","Dust","T",0,100,15,0,{deb:{sa:-1,ch:100}},"Giving loads of interviews.");
+M("noloop","No Loop Format","Dust","T",0,100,10,0,{prot:1},"The Usual Format. Blocks a move.");
+M("doyouwantit","#DoYouWantIt","Diesel","P",85,100,12,0,{buff:{atk:1,self:1,onKO:1}},"The TPT battle cry.");
+M("elizline","Elizabeth Line","Diesel","P",90,100,10,1,{},"Crazy right now, no cap. Priority express.");
+M("nocap","No Cap Fact","Dust","S",65,100,20,0,{},"Genuinely. This gif was an accident.");
+M("seo","Great SEO, Si","Haze","T",0,100,15,0,{deb:{acc:-1,sd:-1,ch:100}},"Buried on page nine of the results.");
+M("dbrelations","Database Relations","Haze","S",85,100,10,0,{st:{id:"CLK",ch:20}},"Having relations with a database again.");
+M("zetajones","Catherine Zeta Jones","Haze","S",95,90,8,0,{},"...was the answer, apparently.");
+M("techvictory","Technical Victory","Dust","T",0,100,10,0,{buff:{def:1,sd:1,spe:1}},"Wins on paper. Somehow.");
+M("hillseyes","Hills Have Eyes","Exotic","S",90,95,10,0,{st:{id:"DAZ",ch:10}},"The other version of Sam.");
+M("livestream","Holiday Livestream","Haze","T",0,100,15,0,{heal:.33},"Watching from the sun lounger.");
+M("tractortyre","Tractor Tyre Pump","Kush","T",0,100,10,0,{buff:{atk:1,def:1}},"More pumped than.");
+M("marinegreen","Troops On The Green","Kush","P",80,100,12,0,{},"Completed and done in time.");
+
+/* ---- generated per-type kits (names authored per type) ---- */
+const KIT={
+  Dust:{p:["Shake Flick","Stem Jab","Brick Slam"],s:["Kief Puff","Dust Cloud","Pollen Burst"],adj:"dusty"},
+  Indica:{p:["Couch Press","Heavy Lean","Slumber Slam"],s:["Purple Wave","Deep Body Hum","Nightcap Pulse"],adj:"heavy"},
+  Sativa:{p:["Zippy Jab","Energy Rush","Manic Sprint"],s:["Head Buzz","Giggle Ray","Cerebral Storm"],adj:"racy"},
+  Hybrid:{p:["Balanced Cut","Even Strike","Crossfade Slam"],s:["Blend Beam","Terpene Swirl","Entourage Wave"],adj:"balanced"},
+  Kush:{p:["Castle Guard","Stone Wall Hit","Rampart Crush"],s:["Earthy Pulse","Hash Haze","Mountain Air"],adj:"earthy"},
+  Haze:{p:["Fog Cut","Mist Strike","Vapour Lash"],s:["Haze Ray","Dream Beam","Amnesia Wave"],adj:"hazy"},
+  Diesel:{p:["Fuel Jab","Gas Strike","Turbo Ram"],s:["Fume Blast","Octane Ray","Full Gas Nova"],adj:"gassy"},
+  Exotic:{p:["Rare Cut","Prime Strike","Top Shelf Slam"],s:["Exotic Ray","Zaza Beam","Primo Nova"],adj:"primo"},
+};
+TYPES.forEach(t=>{
+  const k=KIT[t], base=t.toLowerCase();
+  [[k.p[0],40,100,35],[k.p[1],70,100,20],[k.p[2],100,85,10]].forEach(([n,pw,ac,pp],i)=>
+    M(base+"_p"+i,n,t,"P",pw,ac,pp,0,i===2?{recoil:.15}:{}, "A "+k.adj+" physical hit."));
+  [[k.s[0],40,100,35],[k.s[1],70,100,20],[k.s[2],100,85,10]].forEach(([n,pw,ac,pp],i)=>
+    M(base+"_s"+i,n,t,"S",pw,ac,pp,0,i===2?{deb:{sd:-1,ch:20}}:{}, "A "+k.adj+" special blast."));
+  M(base+"_dr",cap(k.adj)+" Drain",t,"S",55,100,15,0,{drain:.5},"Saps the foe's energy.");
+  M(base+"_pr","Quick "+k.p[0].split(" ")[0],t,"P",45,100,25,1,{},"Strikes first.");
+  M(base+"_bf",cap(k.adj)+" Focus",t,"T",0,100,15,0,{buff:t==="Kush"||t==="Indica"?{def:1,sd:1}:(t==="Sativa"||t==="Diesel"?{atk:1,spe:1}:{sa:1,sd:1})},"Centers itself.");
+  M(base+"_db",cap(k.adj)+" Jeer",t,"T",0,100,15,0,{deb:(t==="Sativa"||t==="Diesel"?{def:-1}:{atk:-1}),chAll:100},"Rattles the foe.");
+  M(base+"_mh",k.p[0].split(" ")[0]+" Flurry",t,"P",22,90,15,0,{hits:[2,5]},"Hits 2-5 times.");
+  M(base+"_st",cap(k.adj)+" Spores",t,"T",0,80,10,0,{st:{id:t==="Indica"?"DAZ":t==="Kush"?"CLK":t==="Haze"?"DAZ":t==="Diesel"?"MUN":"GRN",ch:100}},"Inflicts a condition.");
+});
+const ALLMOVES=Object.keys(MOVES);
+/* pools by type+cat for learnset generation */
+const POOL={};
+TYPES.forEach(t=>{POOL[t]={P:[],S:[],T:[]};});
+ALLMOVES.forEach(id=>{const m=MOVES[id];if(!m.fx.ohkoLike)POOL[m.type][m.cat].push(id);}); /* OHKO-style moves must only come from sig() level-gating, never the generic auto-learnset pool */
+TYPES.forEach(t=>{["P","S"].forEach(c=>POOL[t][c].sort((a,b)=>MOVES[a].pow-MOVES[b].pow));});
+/* ================= STRAINS =================
+   S(id,name,types,[hp,at,df,sa,sd,sp],catchRate,tier,evo{to,lvl},flavor)
+   tier: 0 common 1 uncommon 2 rare 3 epic 4 legendary */
+const DEX={}; let DEXN=0;
+function S(id,name,types,bs,cr,tier,evo,flavor){
+  DEX[id]={id,n:++DEXN,name,types,bs,cr,tier,evo:evo||null,flavor,baseXp:40+tier*35+Math.floor(bs.reduce((a,b)=>a+b)/6)};
+}
+/* signature learnset inserts: strainId -> [[lvl,move],...] */
+const SIGS={};
+const sig=(id,arr)=>SIGS[id]=arr;
+
+/* -- Dust line & UK nostalgia commons -- */
+S("dust","Dust",["Dust"],[30,8,6,8,6,7],235,0,{to:"nug",lvl:9},"The scrapings. 'Smoked my last bit of dust yesterday.'");
+S("nug","Nug",["Dust"],[45,14,11,12,10,11],150,0,{to:"primonug",lvl:20},"A reliable nug. Can be pinched til tomorrow.");
+S("primonug","Primo Nug",["Dust","Hybrid"],[65,22,17,19,16,17],80,1,null,"Top shelf now. The bags-4-balance initiative pays off.");
+S("shake","Shake",["Dust"],[28,7,6,9,7,10],240,0,null,"Bottom of the bag. Still counts.");
+S("stemmy","Stemmy",["Dust"],[26,9,8,5,5,6],245,0,null,"Mostly stalk. A trainer's first mistake.");
+S("brickw","Brick Weed",["Dust","Kush"],[50,13,17,7,12,4],180,0,null,"Compressed since 2004. Structurally sound.");
+S("soapbar","Soap Bar",["Dust","Kush"],[48,12,16,10,12,5],190,0,{to:"triplezero",lvl:22},"Nine-bar nostalgia. Mostly tyre.");
+S("triplezero","Triple Zero",["Kush"],[62,18,24,16,20,8],90,2,null,"The good stuff, sieved thrice. Van glovebox grade.");
+S("reggie","Reggie",["Dust"],[32,10,8,8,7,9],230,0,{to:"midz",lvl:12},"Regular. Does a job. Barely.");
+S("midz","Midz",["Dust","Hybrid"],[48,15,12,14,11,13],150,0,{to:"za",lvl:26},"Mid-tier. Respectable weekday smoke.");
+S("za","Za",["Exotic","Hybrid"],[70,24,18,24,18,20],55,3,null,"The exotic ceiling. Loud enough to wake L-Dog's.");
+S("gummy","Gummy",["Dust"],[40,8,10,14,12,8],200,0,null,"Takes 90 minutes to hit. Then it HITS.");
+S("kief","Kief",["Dust"],[30,6,6,14,10,12],210,0,{to:"kiefcloud",lvl:18},"Grinder-bottom treasure.");
+S("kiefcloud","Kief Cloud",["Dust","Haze"],[50,10,10,26,18,18],110,1,null,"A weather system of pure crystal.");
+S("butty","Butty",["Dust"],[42,12,10,8,8,8],210,0,{to:"clubsando",lvl:16},"A sandwich, in Sandwich.");
+S("clubsando","Club Sandwich",["Dust","Kush"],[60,20,16,12,12,12],120,1,null,"Triple-decked. Throw things, kick things, debate.");
+S("builders","Builder's Brew",["Dust","Kush"],[55,14,16,12,16,9],160,0,null,"Three sugars. Talks to your mum like a builder.");
+/* -- J line -- */
+S("jherbz","J-Herbz",["Sativa"],[34,12,7,12,7,13],200,0,{to:"jswiss",lvl:14},"Standard johns. Does the job.");
+S("jswiss","J-Swiss",["Sativa","Hybrid"],[50,17,11,18,12,17],130,1,{to:"jexec",lvl:28},"A bit of J-Swiss. Bring some if you have.");
+S("jexec","J-Executive",["Sativa","Hybrid"],[68,23,15,26,17,23],70,2,null,"Rolled on the trading floor. Quotes Shakespeare.");
+/* -- Beach line -- */
+S("beachzoot","Beach Zoot",["Sativa"],[32,13,6,12,7,15],200,0,{to:"seabanger",lvl:15},"Best enjoyed at the seafront (non-sexual).");
+S("seabanger","Sea Banger",["Sativa","Haze"],[48,18,10,19,12,20],130,1,{to:"bangroyale",lvl:30},"Caesar Plaque approved. Strictly non-sexual.");
+S("bangroyale","Banger Royale",["Sativa","Haze"],[66,24,14,26,17,27],65,2,null,"The full seafront ceremony. Villa top optional.");
+/* -- Blunt Favours -- */
+S("banblunt","Banana Blunt",["Indica"],[48,12,14,12,13,7],170,0,{to:"bankingsz",lvl:24},"Banana blunt favour. Steady as she goes.");
+S("bankingsz","Banana Kingsize",["Indica"],[68,18,22,18,20,10],90,2,null,"The comfiest wrap in Kent.");
+S("mangoblunt","Mango Blunt",["Hybrid"],[44,13,11,14,11,10],170,0,{to:"mangokingsz",lvl:24},"Mango blunt favour. Sounds good.");
+S("mangokingsz","Mango Kingsize",["Hybrid"],[64,20,17,21,17,15],90,2,null,"Tropical. Council-meeting grade.");
+S("strawblunt","Strawberry Blunt",["Sativa"],[42,14,8,14,9,12],170,0,{to:"strawkingsz",lvl:24},"Strawberry blunt favour. Always a shout.");
+S("strawkingsz","Strawberry Kingsize",["Sativa"],[62,21,13,22,14,19],90,2,null,"Sweet enough to skip the Nando's.");
+/* -- lore rares -- */
+S("sweettooth","Sweet Tooth",["Indica"],[54,14,18,12,17,8],120,1,{to:"sweetmolar",lvl:27},"Sweet Tooth (Indica). Pure defence and chill.");
+S("sweetmolar","Sweet Molar",["Indica","Kush"],[74,19,26,17,24,10],65,2,null,"Dibbles get the nibbles. This is the nibbles.");
+S("lpccrumb","Pound Cake Crumb",["Indica"],[44,12,13,13,12,8],170,0,{to:"lpc",lvl:18},"A crumb of the good stuff from London.");
+S("lpc","London Pound Cake",["Indica"],[58,16,19,17,18,10],110,1,{to:"lpcdeluxe",lvl:32},"LPC. 'Meant to be gooood.' 120 bang standard.");
+S("lpcdeluxe","LPC Deluxe",["Indica","Exotic"],[78,22,26,23,25,13],55,3,null,"The full pound. Eagle-delivery exclusive.");
+S("ls1","LS1",["Hybrid"],[42,13,11,13,11,12],180,0,{to:"ls11",lvl:17},"The starter model from L-town.");
+S("ls11","LS11",["Hybrid"],[56,19,15,19,15,17],110,1,{to:"ls111",lvl:33},"LS11 (Hybrid). New strain in from L-town.");
+S("ls111","LS111",["Hybrid","Exotic"],[74,25,20,26,20,23],55,3,null,"The rumoured third series. Simulation-tier balance.");
+S("wasabiseed","Wasabi Seed",["Sativa"],[38,14,8,13,8,15],180,0,{to:"wasabi",lvl:19},"A promising start to the supply line.");
+S("wasabi","Wasabi Fruits",["Sativa"],[52,20,12,19,12,21],105,1,{to:"wasabiprime",lvl:34},"The boss called it back once — not up to scratch.");
+S("wasabiprime","Wasabi Prime",["Sativa","Exotic"],[70,27,16,26,16,28],50,3,null,"Finally up to scratch. The boss nods.");
+S("nlights","Northern Lights",["Indica"],[52,14,16,16,15,10],120,1,{to:"dotn",lvl:30},"A classic from up north.");
+S("dotn","D.O.T.N.",["Indica","Haze"],[68,20,19,25,21,17],60,3,null,"Drugs of the North. Handle with respect. (yes)");
+S("weepup","Wee Pup",["Hybrid"],[40,12,11,11,11,13],180,0,{to:"gooddog",lvl:21},"Could be dog...");
+S("gooddog","The Good Dog",["Hybrid"],[60,20,17,18,17,18],95,2,{to:"greatdane",lvl:36},"...but very, very good dog.");
+S("greatdane","The Great Dane",["Hybrid","Kush"],[80,26,23,22,22,20],50,3,null,"Best in show at the Annexe garden.");
+/* -- golf line -- */
+S("parthree","Par Three",["Diesel"],[38,14,9,10,8,16],180,0,{to:"birdie",lvl:16},"Beginner course. Nice juicy big holes.");
+S("birdie","Birdie",["Diesel"],[52,20,12,14,11,22],120,1,{to:"albatross",lvl:31},"One under. Ipad on the trolley, footy on.");
+S("albatross","Albatross",["Diesel","Sativa"],[68,27,15,19,14,29],60,3,null,"Three under. Automatic local MP.");
+/* -- space line -- */
+S("stardust","Stardust",["Haze"],[36,9,8,15,10,13],190,0,{to:"moonrock",lvl:18},"Sweepings from a clear night at Sandown.");
+S("moonrock","Moonrock",["Haze"],[54,12,13,23,16,15],110,1,null,"Dense as the fake moon. Maximum gibbous.");
+/* -- poker line -- */
+S("smallblind","Small Blind",["Diesel"],[36,13,9,10,9,14],190,0,{to:"bigblind",lvl:15},"Forced in. No choice.");
+S("bigblind","Big Blind",["Diesel"],[52,18,13,14,12,18],130,1,{to:"allinmon",lvl:29},"Double the pressure.");
+S("allinmon","All-In",["Diesel","Exotic"],[68,26,16,20,15,24],60,3,null,"Rebuys first hour. The red river flows.");
+/* -- ganja line -- */
+S("ganjsprout","Ganja Sprout",["Sativa"],[34,11,8,12,8,12],200,0,{to:"ganjbloom",lvl:14},"A humble beginning.");
+S("ganjbloom","Ganja Bloom",["Sativa"],[50,16,12,18,13,16],140,1,{to:"ganjelder",lvl:28},"Managed to get a bit of ganj.");
+S("ganjelder","Ganja Elder",["Sativa","Hybrid"],[68,22,16,24,18,21],75,2,null,"Has seen every Council meeting since 2023.");
+/* -- cheese line (TPT canon) -- */
+S("cheese","Cheese",["Indica"],[44,13,13,13,12,9],170,0,{to:"exodus",lvl:18},"UK classic. You'll smell it three streets off.");
+S("exodus","Exodus Cheese",["Indica"],[58,18,18,18,17,12],110,1,{to:"queencheese",lvl:33},"The original cut. Luton's finest export.");
+S("queencheese","Queen Cheese",["Indica","Exotic"],[76,23,24,24,23,14],50,3,null,"Cash is king. But this is Queen. God save. Amen.");
+/* -- more families -- */
+S("dealhaze","Deal Haze",["Haze"],[40,10,9,16,11,14],180,0,{to:"channelhaze",lvl:22},"Rolls in off the seafront at dusk.");
+S("channelhaze","Channel Haze",["Haze"],[58,14,14,24,17,19],100,2,null,"Thick enough to cancel the ferry.");
+S("kentkush","Kent Kush",["Kush"],[46,14,16,10,14,8],170,0,{to:"castlekush",lvl:23},"Garden of England grade.");
+S("castlekush","Castle Kush",["Kush"],[66,20,24,14,20,10],95,2,null,"Walmer Castle (not pub) approved.");
+S("amnesia","Amnesia",["Haze"],[42,11,9,17,11,15],170,0,{to:"totalamnesia",lvl:25},"What was I saying?");
+S("totalamnesia","Total Amnesia",["Haze"],[60,15,13,26,17,20],90,2,null,"Remind me: everything.");
+S("gelato33","Gelato 33",["Hybrid"],[46,14,12,15,13,13],160,0,{to:"gelato41",lvl:24},"Dessert course.");
+S("gelato41","Gelato 41",["Hybrid"],[64,20,17,21,18,18],95,2,null,"The upgrade. Eight better, apparently.");
+S("gorillag","Gorilla Glue",["Kush"],[48,16,15,12,13,10],160,0,{to:"gg4",lvl:26},"Sticks to everything. Including the sofa.");
+S("gg4","GG4",["Kush","Diesel"],[66,23,20,16,17,14],90,2,null,"Couch-lock with a diesel finish.");
+S("vandiesel","Van Diesel",["Diesel"],[44,15,12,10,10,14],170,0,{to:"turbovan",lvl:22},"Breaks down weekly. Beloved anyway.");
+S("turbovan","Turbo Van",["Diesel"],[62,22,17,14,13,21],100,2,null,"They spent hours on her. She's flying now.");
+S("gassy","Gassy",["Diesel"],[38,14,9,12,8,15],190,0,{to:"fullgas",lvl:20},"Fumes on opening the tin.");
+S("fullgas","Full Gas",["Diesel"],[56,21,13,18,12,22],110,2,null,"Absolutely honking. In a good way.");
+S("scout","Scout Cookie",["Hybrid"],[42,12,11,14,12,12],180,0,{to:"gsc",lvl:21},"Sold door to door, allegedly.");
+S("gsc","GSC",["Hybrid"],[60,18,16,21,17,17],100,2,null,"The classic cookie cut.");
+/* -- classic singles -- */
+S("whitewidow","White Widow",["Indica"],[54,16,17,17,16,11],110,1,null,"Frosted like a Deal windscreen in January.");
+S("ogkush","OG Kush",["Kush"],[58,18,19,15,17,11],105,1,null,"The original gangster of the garden.");
+S("stardawg","Stardawg",["Diesel"],[56,20,14,16,12,18],105,1,null,"UK van-round favourite. Absolutely honks.");
+S("bluedream","Blue Dream",["Haze","Hybrid"],[56,15,13,21,16,17],105,1,null,"Dreamt we played golf in Rotherham.");
+S("zkittlez","Zkittlez",["Sativa"],[50,16,11,19,13,18],120,1,null,"Taste the rainbow. Then the sofa.");
+S("lemonhaze","Lemon Haze",["Haze","Sativa"],[50,14,10,20,13,19],120,1,null,"Citrus sharp. Morning round fuel.");
+S("sourdiesel","Sour Diesel",["Diesel"],[54,19,12,18,12,19],110,1,null,"Fuel-forward. Van approved.");
+S("runtz","Runtz",["Hybrid"],[52,16,14,18,15,15],115,1,null,"Candy-coated. Suspiciously purple.");
+S("criticalmass","Critical Mass",["Indica"],[62,17,20,15,18,7],110,1,null,"So heavy the branches snap. Relatable.");
+S("jackherer","Jack Herer",["Sativa"],[54,17,12,19,13,18],110,1,null,"The activist's cut. Big library energy.");
+S("skunk1","Skunk #1",["Dust","Sativa"],[50,16,12,15,11,15],130,1,null,"The one your mum warned the paper about.");
+S("spacecake","Space Cake",["Haze"],[56,10,14,22,18,10],120,1,null,"Two hours. Trust the process.");
+S("thaistick","Thai Stick",["Sativa"],[52,18,11,17,11,18],120,1,null,"Old school. Tied with string and legend.");
+S("durban","Durban Poison",["Sativa"],[50,17,10,19,12,20],115,1,null,"Espresso of the strain world.");
+S("purplepunch","Purple Punch",["Indica"],[56,16,17,17,17,10],115,1,null,"Grape soda knockout.");
+S("weddingcake","Wedding Cake",["Kush"],[58,18,18,16,17,11],110,1,null,"Rob's getting married. Speed stagging.");
+S("mimosa","Mimosa",["Sativa"],[50,15,11,19,13,18],120,1,null,"Brunch-coded. Pinkies out.");
+S("dosidos","Do-Si-Dos",["Indica"],[56,17,18,16,17,10],115,1,null,"Spin your partner. Then sit down forever.");
+S("trainwreck","Trainwreck",["Diesel"],[54,20,13,16,11,19],110,1,null,"The 7:02 to Dover. Cancelled.");
+S("chemdog","Chemdog",["Diesel"],[56,19,14,18,13,16],110,1,null,"Lab-note funk. Good dog adjacent.");
+S("pineexp","Pineapple Express",["Hybrid"],[54,17,13,18,14,17],115,1,null,"Weather system and a half.");
+S("gdp","Granddaddy Purple",["Indica"],[60,17,19,17,18,8],110,1,null,"Respect your elders.");
+S("malawi","Malawi Gold",["Sativa"],[52,18,10,20,12,19],110,1,null,"Landrace royalty.");
+S("acapulco","Acapulco Gold",["Sativa"],[54,18,11,19,12,18],110,1,null,"Sunshine in a tin.");
+S("charas","Charas",["Kush"],[56,17,19,16,18,9],115,1,null,"Hand-rolled up a mountain. Probably.");
+S("loud","Loud",["Sativa"],[52,17,10,20,12,19],115,1,null,"The neighbours WILL know.");
+S("chispecial","Chi's Special",["Hybrid"],[54,16,15,18,15,14],120,1,null,"Off-menu at the place in front of the gardens.");
+S("doversole","Dover Sole",["Kush","Dust"],[54,15,19,12,16,10],130,1,null,"Caught fresh off the docks. Not that kind of caught.");
+S("sandstone","Sandown Stone",["Kush"],[58,16,21,12,18,7],125,1,null,"Older than the castle. Dew-resistant.");
+S("honestybox","Honesty Box",["Kush"],[60,12,24,12,22,6],120,1,null,"If there's one man who's never paid one...");
+S("clarety","Clarety",["Diesel"],[54,19,13,16,12,18],120,1,null,"Claret and blue. Watkins scores 83rd-86th minute.");
+/* -- legendaries & bosses -- */
+S("eagle","The Eagle",["Diesel","Exotic"],[80,28,18,24,18,30],10,4,null,"It has landed. It was always going to land.");
+S("jerusalem","Jerusalem",["Exotic"],[85,27,22,27,22,22],8,4,null,"Code name. 'Just stopping off to grab Jerusalem.'");
+S("andromedamon","Andromeda",["Haze","Exotic"],[80,20,20,32,26,24],8,4,null,"Two and a half million light years. Best thing you've ever seen.");
+S("greenjacket","The Green Jacket",["Exotic","Kush"],[85,24,28,24,28,15],6,4,null,"Forget those Xbox skills. It chose you.");
+S("volcano","THE VOLCANO",["Exotic"],[100,30,26,30,26,20],4,4,null,"The shared prized possession, achieved sentience.");
+
+/* ---- signature learnset overrides ---- */
+sig("nug",[[1,"bowlround"],[12,"fieldadmin"]]); sig("primonug",[[20,"bowlover"],[30,"agm"]]);
+sig("jexec",[[28,"craigsaid"],[38,"herbalzoom"]]);
+sig("beachzoot",[[1,"bangbeach"]]); sig("seabanger",[[15,"nonsexual"]]); sig("bangroyale",[[30,"caesarline"],[40,"kylienight"]]);
+sig("sweettooth",[[8,"dibbles"],[16,"strongnod"]]); sig("sweetmolar",[[27,"maxchill"]]);
+sig("lpc",[[18,"strongnod"],[26,"maxchill"]]); sig("lpcdeluxe",[[32,"eaglelands"]]);
+sig("ls11",[[17,"bluntfav"]]); sig("ls111",[[33,"simsuspect"],[42,"d4"]]);
+sig("wasabi",[[19,"threatmid"]]); sig("wasabiprime",[[34,"richter"],[44,"edmatty"]]);
+sig("dotn",[[30,"threatmid"],[36,"bigmoon"]]);
+sig("gooddog",[[21,"dibbles"]]); sig("greatdane",[[36,"quadz"]]);
+sig("parthree",[[1,"parthree"],[10,"caddy"]]); sig("birdie",[[16,"sevenIron"],[24,"bunkersped"]]); sig("albatross",[[31,"lbtdrive"],[40,"rotherham"]]);
+sig("stardust",[[1,"telescope"]]); sig("moonrock",[[18,"gibbous"],[28,"stargayze"],[38,"andromeda"]]);
+sig("smallblind",[[1,"pokerface"]]); sig("bigblind",[[15,"bluff"],[22,"chiplead"]]); sig("allinmon",[[29,"allin"],[36,"redriver"],[44,"doyouwantit"]]);
+sig("queencheese",[[33,"cheeseroll"],[40,"exodus"],[48,"daddyrule"]]);
+sig("exodus",[[18,"cheeseroll"],[26,"exodus"]]);
+sig("channelhaze",[[22,"channelmist"],[32,"drizzle"]]);
+sig("castlekush",[[23,"dovercliff"],[33,"ladderlock"]]);
+sig("totalamnesia",[[25,"remindme"],[35,"connectdots"]]);
+sig("vandiesel",[[1,"seatbelt"]]); sig("turbovan",[[22,"vanbreak"],[32,"benbags"]]);
+sig("honestybox",[[1,"honesty"],[20,"noloop"]]);
+sig("clarety",[[15,"clubcard"],[25,"stagdo"]]);
+sig("builders",[[10,"checkin"]]);
+sig("clubsando",[[16,"sandwichclub"],[26,"marinegreen"]]);
+sig("soapbar",[[10,"windowround"]]); sig("triplezero",[[22,"squeegeesnap"],[34,"kickdoors"]]);
+sig("za",[[26,"mysticnod"],[36,"onthenose"]]);
+sig("bluedream",[[20,"mpdemand"],[30,"interviews"]]);
+sig("weddingcake",[[22,"bestman"],[32,"stagdo"]]);
+sig("chispecial",[[18,"nandos"],[28,"roastdinner"]]);
+sig("eagle",[[1,"eaglescreech"],[1,"eaglelands"],[40,"elizline"],[50,"stagdo"]]);
+sig("jerusalem",[[1,"jerusalemcall"],[1,"mysticnod"],[45,"d4"],[55,"richter"]]);
+sig("andromedamon",[[1,"andromeda"],[1,"telescope"],[45,"stargayze"],[55,"bigmoon"]]);
+sig("greenjacket",[[1,"greenjacket"],[1,"jacketclaim"],[45,"lbtdrive"],[55,"rotherham"]]);
+sig("volcano",[[1,"volcanorip"],[1,"volcanoprime"],[50,"weathergod"],[60,"eruptall"]]);
+M("eruptall","Full Balloon","Exotic","S",90,100,10,0,{hits:[2,2]},"Fills the bag twice. Touch and love.");
+sig("ganjelder",[[28,"gardenprop"],[36,"eden"]]);
+sig("kiefcloud",[[18,"dewfall"]]);
+sig("spacecake",[[20,"campfire"],[30,"glampluxe"]]);
+sig("moonrock2",[]);
+
+/* ---- learnset generation ---- */
+const LEARN={};
+Object.keys(DEX).forEach(id=>{
+  const d=DEX[id], phys=d.bs[1]>=d.bs[3], t1=d.types[0], t2=d.types[1]||d.types[0];
+  const pk=POOL[t1][phys?"P":"S"], sk=POOL[t2][phys?"S":"P"], tt=POOL[t1].T;
+  const L=[[1,pk[0]],[1,POOL[t1].T[0]||tt[0]]];
+  const lvls=[5,9,13,17,21,25,29,34,39,44,49];
+  const seq=[pk[1],POOL["Dust"].P[0]==="dust_p0"?t1.toLowerCase()+"_pr":pk[0], t1.toLowerCase()+"_bf", sk[1]||sk[0],
+    t1.toLowerCase()+"_dr", t1.toLowerCase()+"_db", pk[2], t1.toLowerCase()+"_mh", sk[2]||sk[1], t1.toLowerCase()+"_st", pk[pk.length-1]];
+  lvls.forEach((lv,i)=>{ if(seq[i]&&MOVES[seq[i]]) L.push([lv,seq[i]]); });
+  (SIGS[id]||[]).forEach(([lv,mv])=>{ if(MOVES[mv]) L.push([lv,mv]); });
+  L.sort((a,b)=>a[0]-b[0]);
+  const seen=new Set(); LEARN[id]=L.filter(([lv,mv])=>!seen.has(mv)&&seen.add(mv));
+});
+
+/* ================= ITEMS ================= */
+const ITEMS={
+  tin:{name:"Tin",cat:"balls",price:12,ball:1,desc:"Standard catch tin. Lob it."},
+  gtin:{name:"Golden Tin",cat:"balls",price:38,ball:1.8,desc:"Primo gear. Much better catch rate."},
+  ptin:{name:"Primo Tin",cat:"balls",price:110,ball:2.8,desc:"Top shelf. Nearly unfair."},
+  cuppa:{name:"Cuppa",cat:"heal",price:12,heal:25,desc:"Restores 25 HP. Three sugars."},
+  nugbutty:{name:"Nug Butty",cat:"heal",price:35,heal:60,desc:"Restores 60 HP. Don't ask."},
+  nandositem:{name:"Cheeky Nando's",cat:"heal",price:80,heal:140,desc:"Restores 140 HP. Not a euphemism."},
+  fullbless:{name:"Full Blessing",cat:"heal",price:180,heal:9999,desc:"Full HP. No stress on the bless."},
+  softreset:{name:"Soft Reset",cat:"heal",price:220,revive:.5,desc:"Revives a fainted strain to half HP."},
+  water:{name:"Bottled Water",cat:"heal",price:18,cure:"GRN",desc:"Cures greening out. Sip it, G."},
+  coffee:{name:"Strong Coffee",cat:"heal",price:18,cure:"DAZ",desc:"Wakes a dazed strain right up."},
+  deepheat:{name:"Deep Heat",cat:"heal",price:18,cure:"CLK",desc:"Un-locks the couch-locked."},
+  snackbox:{name:"Snack Box",cat:"heal",price:18,cure:"MUN",desc:"Feeds the munchies. Cures it."},
+  chillpill:{name:"Agent of Chill",cat:"heal",price:55,cure:"ALL",desc:"Cures any condition. Remind me: agent of chill."},
+  bugspray:{name:"Bug Spray",cat:"tool",price:40,repel:120,desc:"From the camping list. Repels weak wild strains for 120 steps."},
+  sidequest:{name:"Random Side Quest",cat:"tool",price:60,warp:1,desc:"A spanner in the works. Warps you back to the Annexe."},
+  grinder:{name:"Grinder",cat:"held",price:150,held:{crit:1},desc:"HELD: boosts critical-hit ratio."},
+  kingskins:{name:"Kingskins",cat:"held",price:150,held:{phys:1.1},desc:"HELD: physical moves +10%."},
+  glassbong:{name:"Glass Bong",cat:"held",price:150,held:{spec:1.1},desc:"HELD: special moves +10%."},
+  botbot:{name:"Bot Bot",cat:"held",price:200,held:{pinch:.25},desc:"HELD: once per battle, restores 25% HP when low."},
+  clubcarditem:{name:"Lucky Clubcard",cat:"held",price:250,held:{coins:1.5},desc:"HELD: 1.5x coins from battles."},
+  scopelens:{name:"Telescope Lens",cat:"held",price:180,held:{acc:1.1},desc:"HELD: accuracy +10%. Watch the dew."},
+  lbttowel:{name:"LBT Towel",cat:"held",price:180,held:{defb:1.1},desc:"HELD: defences +10%."},
+  leftovers:{name:"Leftover Munchies",cat:"held",price:220,held:{regen:1/16},desc:"HELD: restores a little HP each turn."},
+  focusgrit:{name:"Focus Grit",cat:"held",price:300,held:{endure:.1},desc:"HELD: 10% chance to survive a KO hit with 1 HP."},
+  villatop:{name:"Villa Top",cat:"held",price:160,held:{spdb:1.1},desc:"HELD: speed +10%. Helps you spot me."},
+  adrenaline:{name:"Adrenaline Shot",cat:"boost",price:120,battleBuff:{atk:1},desc:"BATTLE ONLY: raises Attack for this fight."},
+  redbull:{name:"Red Bull",cat:"boost",price:120,battleBuff:{spe:1},desc:"BATTLE ONLY: raises Speed for this fight."},
+  gameface:{name:"Game Face",cat:"boost",price:120,battleBuff:{def:1,sd:1},desc:"BATTLE ONLY: raises both defences for this fight."},
+  papers:{name:"Papers",cat:"mat",price:6,desc:"Crafting material. Kingsize, obviously."},
+  dustsample:{name:"Dust Sample",cat:"mat",price:4,desc:"Crafting material. The scrapings."},
+  seaglass:{name:"Sea Glass",cat:"mat",price:8,desc:"Crafting material. Beach treasure."},
+  flint:{name:"Flint",cat:"mat",price:8,desc:"Crafting material. Campfire grade."},
+  lotto:{name:"Lottery Ticket",cat:"quest",price:22,desc:"Normal Lotto or Euromillions. 29 is key."},
+  telescopeq:{name:"The Telescope",cat:"quest",price:0,desc:"Kettle's pride. Couldn't fit in the car once."},
+  volcanobag:{name:"Volcano Bag",cat:"quest",price:0,desc:"A delivery for the Annexe. Handle with ceremony."},
+  seveniron:{name:"Kettle's 7-Iron",cat:"quest",price:0,desc:"'Have I lost my clubs or do you have them?'"},
+  qbotbot:{name:"Kettle's Bot Bot",cat:"quest",price:0,desc:"It was under the sofa."},
+  note:{name:"Remind-Me Note",cat:"quest",price:0,desc:"A cryptic agenda item, found in the wild."},
+  chipx:{name:"Poker Chip",cat:"quest",price:0,desc:"Proof you beat a TPT legend."},
+};
+const RECIPES=[
+  {out:"bugspray",need:{dustsample:2,papers:1},label:"2 Dust Sample + 1 Papers"},
+  {out:"nugbutty",need:{dustsample:3},label:"3 Dust Sample"},
+  {out:"cuppa",need:{seaglass:1,flint:1},label:"1 Sea Glass + 1 Flint"},
+  {out:"gtin",need:{seaglass:2,papers:2},label:"2 Sea Glass + 2 Papers"},
+  {out:"chillpill",need:{flint:2,dustsample:2,papers:1},label:"2 Flint + 2 Dust + 1 Papers"},
+];
+/* ================= WORLD =================
+   tiles: # tree  ^ cliff  w water  b building  . path  g grass  G tall grass
+          , sand  F flowers  = bridge  c coin  * sparkle(deco) */
+const SOLID=new Set(["#","^","w","b"]);
+const MAPS={};
+function MAPDEF(id,name,rows,opts){ const w=Math.max(...rows.map(r=>r.length));
+  MAPS[id]={id,name,rows:rows.map(r=>(r+"#".repeat(w)).slice(0,w)),w,h:rows.length,
+    warps:opts.warps||[],signs:opts.signs||{},enc:opts.enc||null,hidden:opts.hidden||[],
+    climate:opts.climate||"inland",indoor:!!opts.indoor,dark:!!opts.dark};
+}
+
+MAPDEF("annexe","Annexe Grounds",[
+"################",
+"#F.F..gg..F.F..#",
+"#..bbbb...####.#",
+"#..bbbb...gggg.#",
+"#..b..b...gggg.#",
+"#....F....####.#",
+"#.c......F......",
+"#..F..######...#",
+"#......#git....#",
+"#gg....######..#",
+"#gg..........c.#",
+"################",
+],{climate:"coast",
+ warps:[{x:4,y:4,to:"annexe_int",tx:4,ty:5},{x:15,y:6,to:"deal",tx:1,ty:9,edge:"E"}],
+ signs:{"9,7":"THE ANNEXE — Security Council HQ. Clubhouse & Lodge. #agm",
+        "5,1":"Annexe Garden: the blueprint for efficiency. No rules. Especially not fruit rules."},
+ enc:{grass:[["dust",30],["shake",20],["stemmy",15],["jherbz",15],["ganjsprout",12],["reggie",8]],lvl:[2,4]},
+ hidden:[{x:1,y:1,item:"papers",n:2},{x:13,y:10,item:"dustsample",n:2}]});
+MAPS.annexe.rows=MAPS.annexe.rows.map(r=>r.replace("git","..."));
+
+MAPDEF("annexe_int","The Annexe",[
+"bbbbbbbbbb",
+"b........b",
+"b........b",
+"b........b",
+"b........b",
+"b........b",
+"bbbb.bbbbb",
+],{indoor:true,
+ warps:[{x:4,y:6,to:"annexe",tx:4,ty:5}],
+ signs:{}});
+
+MAPDEF("deal","Deal Town",[
+"##########..##############",
+"#F..gg....gg....F....c...#",
+"#...gg..######..######...#",
+"#.......#Prim#..#Club#...#",
+"#..###..##.###..###.##...#",
+"#..#h#............F......#",
+"#..#.#..F..cF............#",
+"........#####....######..#",
+"#.......#Chi#....#....#..#",
+"........##.##....#....#..#",
+"#...F.............gg.....#",
+"#.....c....F......gg...*..",
+"#..gg............###.....#",
+"#..gg.....F..............#",
+"##########..##############",
+],{climate:"coast",
+ warps:[
+  {x:0,y:7,to:"beach",tx:20,ty:5,edge:"W"},
+  {x:0,y:9,to:"annexe",tx:14,ty:6,edge:"W"},
+  {x:10,y:0,to:"golfroute",tx:6,ty:17,edge:"N"},{x:11,y:0,to:"golfroute",tx:7,ty:17,edge:"N"},
+  {x:10,y:14,to:"millhill",tx:8,ty:1,edge:"S"},{x:11,y:14,to:"millhill",tx:9,ty:1,edge:"S"},
+  {x:25,y:11,to:"sandwichroad",tx:1,ty:4,edge:"E"},
+  {x:10,y:4,to:"primo_int",tx:4,ty:5},{x:19,y:4,to:"clubhouse_int",tx:5,ty:7},
+  {x:10,y:9,to:"chis_int",tx:3,ty:5},{x:4,y:5,to:"ldogs_int",tx:3,ty:5}],
+ signs:{"5,10":"DEAL — Kent's finest. Julius Caesar landed near here. He left a plaque.",
+        "22,7":"CAESAR MEMORIAL PLAQUE → usual meeting spot. Eagle activity reported at night.",
+        "12,2":"NORTH: Golf Route → Stonelees, home of the LBT Par 3 Masters."},
+ enc:{grass:[["nug",25],["jherbz",20],["reggie",15],["butty",12],["cheese",10],["gummy",10],["skunk1",8]],lvl:[3,6]},
+ hidden:[{x:23,y:11,item:"seaglass",n:1},{x:1,y:13,item:"cuppa",n:1}]});
+MAPS.deal.rows=MAPS.deal.rows.map(r=>r.replace("Prim","....").replace("Club","....").replace("Chi","...").replace("#h#","#.#"));
+
+MAPDEF("beach","The Beachfront",[
+"######....############",
+"#g..g.....g...F..g...#",
+"#.g....c......g.......",
+"#,,,,,,,,,,,,,,,,,,,,#",
+"#,,,c,,,,,,,,,,,,,,,,#",
+",,,,,,,,,,,,,,,,,,,,,.",
+"#,,,,,*,,,,,,,,,c,,,,#",
+"wwwwwwwww==wwwwwwwwwww",
+"wwwwwwwww==wwwwwwwwwww",
+"#,,,,,,,,,,,,,,,,,,,,#",
+"#,,^^,,,,,,,,,,,,,,,,#",
+"######################",
+],{climate:"coast",
+ warps:[
+  {x:6,y:0,to:"peace",tx:7,ty:9,edge:"N"},{x:7,y:0,to:"peace",tx:8,ty:9,edge:"N"},
+  {x:21,y:2,to:"deal",tx:1,ty:7,edge:"E"},{x:21,y:5,to:"deal",tx:1,ty:7,edge:"E"},
+  {x:0,y:5,to:"sandown",tx:12,ty:6,edge:"W"},
+  {x:3,y:9,to:"cave",tx:8,ty:2,req:"chips5",reqMsg:"The tide covers the smugglers' entrance. (Come back with 5 poker chips.)"}],
+ signs:{"9,1":"THE BEACH — banger territory (strictly non-sexual). Mind the dew after dark."},
+ enc:{grass:[["beachzoot",30],["jherbz",18],["doversole",12],["seabanger",8],["stardust",12],["dealhaze",12],["mimosa",8]],lvl:[5,9],
+      night:[["stardust",30],["dealhaze",25],["moonrock",10],["beachzoot",20],["seabanger",15]]},
+ hidden:[{x:6,y:6,item:"seaglass",n:2},{x:16,y:6,item:"seaglass",n:1},{x:2,y:9,item:"flint",n:1}]});
+
+MAPDEF("sandown","Sandown Castle",[
+"##############",
+"#..^^^^^^^...#",
+"#..^.....^.g.#",
+"#..^..*..^.g.#",
+"#..^.....^...#",
+"#..^^^.^^^...#",
+"#.............",
+"#.g.g....F...#",
+"#.g.g..c.....#",
+"#....F.......#",
+"##############",
+],{climate:"coast",
+ warps:[{x:13,y:6,to:"beach",tx:1,ty:5,edge:"E"}],
+ signs:{"6,7":"SANDOWN CASTLE — telescope out on clear nights. Andromeda visible. Watch the dew.",
+        "5,1":"HENRICIAN RUINS. The stones remember. Mostly they remember stargazing sessions."},
+ enc:{grass:[["sandstone",25],["stardust",20],["kentkush",18],["dealhaze",15],["nlights",12],["moonrock",10]],lvl:[8,12],
+      night:[["stardust",30],["moonrock",25],["nlights",20],["dealhaze",25]]},
+ hidden:[{x:6,y:3,item:"flint",n:2}]});
+
+MAPDEF("peace","Peace Gardens",[
+"################",
+"#F.GG..F..GG.F.#",
+"#..GG.....GG...#",
+"#.####..F......#",
+"#.#..#....GG.c.#",
+"#.##.#....GG...#",
+"#....*.F.......#",
+"#.GG.....GG..F.#",
+"#.GG..c..GG....#",
+"#F.....F.......#",
+"#######..#######",
+],{climate:"coast",
+ warps:[{x:7,y:10,to:"beach",tx:6,ty:1,edge:"S"},{x:8,y:10,to:"beach",tx:7,ty:1,edge:"S"},
+        {x:4,y:5,to:"chapel_int",tx:3,ty:5}],
+ signs:{"9,9":"PEACE GARDENS (behind Chi's). Parked here for convenience, not because it's dodgy."},
+ enc:{grass:[["wasabiseed",22],["ganjsprout",18],["lpccrumb",15],["ls1",15],["cheese",10],["scout",10],["wasabi",5],["chispecial",5]],lvl:[6,10]},
+ hidden:[{x:5,y:6,item:"papers",n:2}]});
+
+MAPDEF("millhill","Mill Hill",[
+"##########..######",
+"#....gg..........#",
+"#....gg..######..#",
+"#..F.....#....#..#",
+"#..####..##.###..#",
+"#..#..#.....F....#",
+"#..##.#...c......#",
+"#.........####...#",
+"#..gg.....#..#.*.#",
+"#..gg.....####...#",
+"#.....F..........#",
+"##################",
+],{warps:[
+  {x:10,y:0,to:"deal",tx:10,ty:13,edge:"N"},{x:11,y:0,to:"deal",tx:11,ty:13,edge:"N"},
+  {x:11,y:4,to:"tesco_int",tx:4,ty:5},{x:5,y:6,to:"malachi_int",tx:3,ty:5}],
+ signs:{"7,10":"MILL HILL — home of the big Tesco. Every little helps, allegedly."},
+ enc:{grass:[["nug",22],["builders",18],["gummy",15],["butty",15],["cheese",12],["vandiesel",10],["gassy",8]],lvl:[4,8]},
+ hidden:[{x:15,y:8,item:"dustsample",n:2}]});
+
+MAPDEF("golfroute","Golf Route",[
+"########..########",
+"#g..g...........g#",
+"#g..F..gg..c..gg.#",
+"#......gg.....gg.#",
+"#..gg............#",
+"#..gg...F..gg....#",
+"#.......F..gg..*.#",
+"#..c.............#",
+"#....gg......gg..#",
+"#F...gg......gg..#",
+"#................#",
+"#..gg....F...gg..#",
+"#..gg........gg..#",
+"#.....c..........#",
+"#.gg.........gg..#",
+"#.gg....F....gg..#",
+"########.#########",
+"#.......F........#",
+"######..##########",
+],{warps:[
+  {x:8,y:0,to:"stonelees",tx:8,ty:9,edge:"N"},{x:9,y:0,to:"stonelees",tx:9,ty:9,edge:"N"},
+  {x:6,y:18,to:"deal",tx:10,ty:1,edge:"S"},{x:7,y:18,to:"deal",tx:11,ty:1,edge:"S"}],
+ signs:{"9,17":"GOLF ROUTE — trainers ahead want to battle. Standard etiquette applies."},
+ enc:{grass:[["parthree",25],["jherbz",15],["ganjsprout",15],["gassy",12],["vandiesel",12],["clarety",8],["birdie",5],["zkittlez",8]],lvl:[8,13]},
+ hidden:[{x:15,y:6,item:"nugbutty",n:1}]});
+
+MAPDEF("stonelees","Stonelees — The Heights",[
+"##################",
+"#..^^^..MMMM..^^^#",
+"................*#",
+"#..gg....F...gg..#",
+"#..gg........gg..#",
+"#....F...c.......#",
+"#..####..........#",
+"#..#..#...gg..F..#",
+"#..####...gg.....#",
+"#.....F..........#",
+"########..########",
+],{warps:[
+  {x:8,y:10,to:"golfroute",tx:8,ty:1,edge:"S"},{x:9,y:10,to:"golfroute",tx:9,ty:1,edge:"S"},
+  {x:0,y:2,to:"dernwoodroad",tx:14,ty:4,edge:"W"},
+  {x:9,y:1,to:"masters",tx:5,ty:7,req:"chips8",reqMsg:"THE MASTERS ARENA. Doors open to holders of all 8 TPT chips."}],
+ signs:{"5,9":"STONELEES GOLF CENTRE — Par 3. Site of the LBT Par 3 Masters. Jacket up for grabs.",
+        "13,1":"THE HEIGHTS. Matt Palmer holds court here. More pumped than usual."},
+ enc:{grass:[["parthree",25],["birdie",15],["clarety",12],["stardawg",12],["gassy",12],["sourdiesel",10],["albatross",4],["trainwreck",10]],lvl:[12,17]},
+ hidden:[{x:16,y:2,item:"gtin",n:1}]});
+MAPS.stonelees.rows=MAPS.stonelees.rows.map(r=>r.replace("MMMM","b..b"));
+
+MAPDEF("sandwichroad","Sandwich Road",[
+"####################",
+"#g..g....F.....g..g#",
+"#..........c.......#",
+"#...gg..gg....gg...#",
+"....gg..gg....gg....",
+"#..F...........F...#",
+"#......gg..gg......#",
+"#..*...gg..gg...c..#",
+"#..................#",
+"####################",
+],{warps:[
+  {x:0,y:4,to:"deal",tx:24,ty:11,edge:"W"},{x:19,y:4,to:"sandwich",tx:1,ty:5,edge:"E"}],
+ signs:{"9,1":"SANDWICH ROAD — Kettle's van round. In and around Sandwich today."},
+ enc:{grass:[["butty",22],["nug",15],["gooddog",8],["weepup",15],["cheese",12],["gorillag",10],["runtz",10],["chemdog",8]],lvl:[10,15]},
+ hidden:[{x:3,y:7,item:"papers",n:3}]});
+
+MAPDEF("sandwich","Sandwich",[
+"##########..######",
+"#....gg..........#",
+"#....gg..#####...#",
+"#..F.....#...#...#",
+"#..####..##.##...#",
+"...#..#......F...#",
+"#..####...c......#",
+"#.....F......gg..#",
+"#..*.........gg..#",
+"#................#",
+"##################",
+],{warps:[
+  {x:0,y:5,to:"sandwichroad",tx:18,ty:4,edge:"W"},
+  {x:10,y:0,to:"canterburyrd",tx:8,ty:7,edge:"N",req:"chips3",reqMsg:"Road closed for the cricket. (Opens once you hold 3 chips.)"},
+  {x:11,y:4,to:"butcher_int",tx:3,ty:5}],
+ signs:{"7,9":"SANDWICH — throw things, kick things, debate about races. A town of culture."},
+ enc:{grass:[["clubsando",20],["butty",18],["cheese",15],["exodus",8],["gsc",10],["dosidos",12],["purplepunch",10],["weddingcake",7]],lvl:[13,17]},
+ hidden:[{x:3,y:8,item:"water",n:2}]});
+
+MAPDEF("canterburyrd","Canterbury Road",[
+"########..########",
+"#g...g...........#",
+"#...gg...c..gg...#",
+"#...gg......gg...#",
+"#.......F........#",
+"#..gg........gg..#",
+"#..gg...*....gg..#",
+"#........F.......#",
+"########..########",
+],{warps:[
+  {x:8,y:8,to:"sandwich",tx:10,ty:1,edge:"S"},{x:9,y:8,to:"sandwich",tx:10,ty:1,edge:"S"},
+  {x:8,y:0,to:"tilgate",tx:8,ty:12,edge:"N",req:"chips6",reqMsg:"Tilgate's gates are shut. (Opens at 6 chips.)"},
+  {x:9,y:0,to:"doverroad",tx:1,ty:4,edge:"N",off:1}],
+ signs:{"9,7":"CANTERBURY / CHILLENDEN / ASH — a proper Ben day out here."},
+ enc:{grass:[["jswiss",18],["ganjbloom",18],["lemonhaze",12],["jackherer",12],["amnesia",12],["thaistick",10],["durban",10],["malawi",8]],lvl:[16,21]},
+ hidden:[{x:8,y:6,item:"glassbong",n:1}]});
+
+MAPDEF("doverroad","Dover Road",[
+"##################",
+"#g..g...F...g..g.#",
+"#....gg....gg....#",
+"#....gg....gg..c.#",
+"....F.....*......#",
+"#...gg....gg.....#",
+"#...gg....gg.....#",
+"#................#",
+"########..########",
+],{warps:[
+  {x:0,y:4,to:"canterburyrd",tx:9,ty:1,edge:"W"},
+  {x:8,y:8,to:"dover",tx:8,ty:1,edge:"S"},{x:9,y:8,to:"dover",tx:8,ty:1,edge:"S"}],
+ signs:{"8,1":"DOVER ROAD — into Dover for 4:30. Gym then head back."},
+ enc:{grass:[["kentkush",18],["gorillag",15],["ogkush",12],["charas",12],["sourdiesel",12],["fullgas",10],["gg4",6],["castlekush",5],["whitewidow",10]],lvl:[18,23]},
+ hidden:[{x:10,y:4,item:"deepheat",n:2}]});
+
+MAPDEF("dover","Dover Docks",[
+"########..########",
+"#..^^^...........#",
+"#..^.^...F...gg..#",
+"#............gg..#",
+"#..####..........#",
+"#..#..#....c.....#",
+"#..##.#..F.......#",
+"#................#",
+"#wwwwww=wwwwwwww*#",
+"#wwwwww=wwwwwwww.#",
+"##################",
+],{climate:"coast",
+ warps:[{x:8,y:0,to:"doverroad",tx:8,ty:7,edge:"N"},{x:9,y:0,to:"doverroad",tx:9,ty:7,edge:"N"},
+        {x:5,y:5,to:"dovergym_int",tx:3,ty:5}],
+ signs:{"11,7":"DOVER DOCKS — 53 Coombe Valley Road that way. Quadzilla trains here. Legs. Always legs."},
+ enc:{grass:[["doversole",20],["castlekush",12],["kentkush",15],["sandstone",12],["dealhaze",12],["gdp",10],["criticalmass",12],["honestybox",7]],lvl:[20,25]},
+ hidden:[{x:16,y:8,item:"lbttowel",n:1}]});
+
+MAPDEF("dernwoodroad","Farm Track",[
+"################",
+"#g..g...F..g..g#",
+"#...gg...c.....#",
+"#...gg....gg...#",
+"........F.gg....",
+"#..gg..........#",
+"#..gg...*..F...#",
+"#..............#",
+"################",
+],{warps:[
+  {x:15,y:4,to:"stonelees",tx:1,ty:2,edge:"E"},{x:0,y:4,to:"dernwood",tx:14,ty:5,edge:"W"}],
+ signs:{"8,1":"FARM TRACK — 2 hours from Deal. Charge your power banks."},
+ enc:{grass:[["weepup",18],["spacecake",12],["stardust",15],["ganjbloom",12],["pineexp",12],["bluedream",10],["acapulco",11],["loud",10]],lvl:[19,24]},
+ hidden:[{x:8,y:6,item:"fullbless",n:1}]});
+
+MAPDEF("dernwood","Dernwood Farm",[
+"################",
+"#..#####...gg..#",
+"#..#...#...gg..#",
+"#..##.##.......#",
+"#.....F...####.#",
+"#..c......#..#..",
+"#....*....####.#",
+"#..GG......F...#",
+"#..GG..GG......#",
+"#......GG..c...#",
+"################",
+],{climate:"forest",
+ warps:[{x:15,y:5,to:"dernwoodroad",tx:1,ty:4,edge:"E"},{x:5,y:3,to:"daddy_int",tx:3,ty:5}],
+ signs:{"7,4":"DERNWOOD FARM — off-grid glamping. Logs & kindling by reception. HONESTY BOX in operation."},
+ enc:{grass:[["spacecake",15],["gooddog",12],["moonrock",10],["gelato33",12],["gelato41",6],["totalamnesia",8],["channelhaze",8],["ganjelder",7],["gsc",12],["za",4],["greatdane",3]],lvl:[24,30],
+      night:[["moonrock",25],["totalamnesia",15],["channelhaze",15],["spacecake",20],["nlights",15],["za",6],["dotn",4]]},
+ hidden:[{x:5,y:6,item:"ptin",n:1}]});
+
+MAPDEF("tilgate","Tilgate Forest",[
+"##################",
+"#GG...#..#...GG..#",
+"#GG.#...GG.#.GG..#",
+"#...#...GG.#.....#",
+"#.#...*....#.GG..#",
+"#.#..####..#.GG..#",
+"#....#..#....F...#",
+"#.GG.#.##..c.....#",
+"#.GG......GG.....#",
+"#....F....GG..#..#",
+"#..#.....#....#..#",
+"#..#..GG.#..GG...#",
+"#.....GG....GG...#",
+"########..########",
+],{climate:"forest",
+ warps:[{x:8,y:13,to:"canterburyrd",tx:8,ty:1,edge:"S"},{x:9,y:13,to:"canterburyrd",tx:8,ty:1,edge:"S"},
+        {x:6,y:7,to:"tilgate_int",tx:3,ty:5}],
+ signs:{"5,9":"TILGATE FOREST GOLF COURSE — 18 holes, buggy hire £5 (!!). Queen Cheese reigns deeper in."},
+ enc:{grass:[["greatdane",5],["ganjelder",10],["exodus",12],["queencheese",2],["totalamnesia",10],["castlekush",10],["gg4",10],["fullgas",10],["albatross",5],["za",5],["ls111",3],["gooddog",14],["turbovan",7],["lpcdeluxe",3],["wasabiprime",4]],lvl:[28,35],
+      night:[["dotn",10],["za",8],["moonrock",20],["totalamnesia",20],["channelhaze",20],["queencheese",4],["lpcdeluxe",4],["ls111",4],["wasabiprime",5],["greatdane",5]]},
+ hidden:[{x:6,y:4,item:"focusgrit",n:1}]});
+
+MAPDEF("cave","Smugglers' Cave",[
+"################",
+"#......#...#...#",
+"#..##..#.*.#...#",
+"#..#...#.#.#...#",
+"#..#.###.#.....#",
+"#....#...#.###.#",
+"#.##.#.###.#...#",
+"#.#..#.....#.c.#",
+"#.#..###.###...#",
+"#.#......#.....#",
+"#.########.##..#",
+"#..............#",
+"################",
+],{dark:true,climate:"cave",
+ warps:[{x:8,y:1,to:"beach",tx:4,ty:9}],
+ signs:{"12,11":"Deal's smuggling tunnels. Someone chalked 'JERUSALEM WAS HERE' on the wall."},
+ enc:{grass:null,cave:[["soapbar",20],["brickw",18],["triplezero",8],["kief",15],["kiefcloud",8],["sandstone",12],["charas",10],["ogkush",9]],lvl:[26,32]},
+ hidden:[{x:9,y:2,item:"softreset",n:1},{x:13,y:7,item:"ptin",n:1}]});
+
+MAPDEF("masters","The Masters Arena",[
+"############",
+"#..........#",
+"#....VV....#",
+"#....VV....#",
+"#..........#",
+"#....F.....#",
+"#..........#",
+"#..........#",
+"#....S.....#",
+"############",
+],{indoor:true,
+ warps:[{x:5,y:8,to:"stonelees",tx:9,ty:2}],
+ signs:{"4,8":"THE LBT PAR 3 MASTERS. The famous Jacket is up for grabs once again. #doyouwantit"}});
+MAPS.masters.rows=MAPS.masters.rows.map(r=>r.replace("VV","..").replace("S","."));
+
+/* interiors (small template) */
+const ROOM=["bbbbbbbb","b......b","b......b","b......b","b......b","b......b","bbb.bbbb"];
+[["primo_int","Top Primo"],["tesco_int","Mill Hill Tesco"],["chis_int","Chi's Café"],["ldogs_int","L-Dog's"],
+ ["clubhouse_pass","x"],["chapel_int","Peace Chapel"],["malachi_int","Malachi's Study"],["butcher_int","The Butcher's"],
+ ["dovergym_int","Dover Gym"],["daddy_int","Farmhouse"],["tilgate_int","Forest Lodge"]].forEach(([id,name])=>{
+  if(id==="clubhouse_pass")return;
+  MAPDEF(id,name,ROOM.slice(),{indoor:true,warps:[{x:3,y:6,to:"deal",tx:10,ty:5}]});
+});
+MAPS.primo_int.warps=[{x:3,y:6,to:"deal",tx:10,ty:5}];
+MAPS.tesco_int.warps=[{x:3,y:6,to:"millhill",tx:11,ty:5}];
+MAPS.chis_int.warps=[{x:3,y:6,to:"deal",tx:10,ty:10}];
+MAPS.ldogs_int.warps=[{x:3,y:6,to:"deal",tx:4,ty:6}];
+MAPS.chapel_int.warps=[{x:3,y:6,to:"peace",tx:4,ty:6}];
+MAPS.malachi_int.warps=[{x:3,y:6,to:"millhill",tx:5,ty:7}];
+MAPS.butcher_int.warps=[{x:3,y:6,to:"sandwich",tx:11,ty:5}];
+MAPS.dovergym_int.warps=[{x:3,y:6,to:"dover",tx:5,ty:6}];
+MAPS.daddy_int.warps=[{x:3,y:6,to:"dernwood",tx:5,ty:4}];
+MAPS.tilgate_int.warps=[{x:3,y:6,to:"tilgate",tx:6,ty:8}];
+MAPDEF("clubhouse_int","Palmer-Tester Clubhouse",[
+"bbbbbbbbbbbb",
+"b..........b",
+"b..bb..bb..b",
+"b..........b",
+"b..bb..bb..b",
+"b..........b",
+"b..........b",
+"b..........b",
+"bbbbb.bbbbbb",
+],{indoor:true,warps:[{x:5,y:8,to:"deal",tx:19,ty:5}]});
+
+/* ================= TRAINERS ================= */
+const TRAINERS={};
+function T(id,name,glyph,team,o){TRAINERS[id]={id,name,glyph,team,ai:o.ai||1,chip:o.chip||null,
+  reward:o.reward||team[team.length-1][1]*8,intro:o.intro,win:o.win||"Good game, that.",lose:o.lose,
+  rematch:o.rematch||null,onceOnly:o.onceOnly};}
+T("caddy1","Caddy Dom","🧢",[["parthree",9],["jherbz",8]],{intro:"Carrying bags builds character. And lats.",lose:"Off to read someone's green."});
+T("caddy2","Range Rat Tom","⛳",[["gassy",10],["parthree",10]],{intro:"I live at the driving range. Legally, I mean.",lose:"Back to the mats."});
+T("golfer1","Weekend Golfer Rob J.","🏌️",[["birdie",12],["clarety",11]],{intro:"Robert Jerusalem Burnham. Yes, that Jerusalem. No relation. Probably.",lose:"Speed stagging back to the car park."});
+T("walker1","Dog Walker Jan","🐕",[["weepup",11],["weepup",12]],{intro:"They could be dogs... they're very good dogs.",lose:"Walkies, then."});
+T("vanman","Van Man Jerry","🚐",[["vandiesel",14],["gassy",13]],{intro:"Off to Cuba tomorrow. Quick battle first?",lose:"Cuba can wait five minutes."});
+T("gymbro1","Gym Bro Clint","💪",[["gorillag",15],["kentkush",14]],{intro:"It's leg day. It's always leg day.",lose:"Boring, no thank you please."});
+T("stagger","Stag Party Brad","🍺",[["weddingcake",16],["butty",15]],{intro:"Ooh, work friend! One of the greats, this stag do.",lose:"The circle of trust widens."});
+T("birdlady","Twitcher Maureen","🦆",[["dealhaze",17],["stardust",16],["doversole",16]],{intro:"I'm here for the seagulls. Not THE Seagull. The birds.",lose:"Back to the hide."});
+T("fisherman","Docker Pete","🎣",[["doversole",21],["sandstone",20]],{intro:"Fresh off the boat. The strains, not me.",lose:"Tide's turning anyway."});
+T("hiker","Rambler Kit T.","🥾",[["thaistick",20],["acapulco",19],["ganjbloom",20]],{intro:"People just can't take a joke anymore. Anyway — battle?",lose:"Great to see you, thanks for hosting. xoxox"});
+T("forester","Forester George","🌲",[["pineexp",26],["gelato33",25],["gooddog",26]],{intro:"The forest keeps a little of everything.",lose:"Mind the roots on the way out."});
+T("camper","Glamper Emily","⛺",[["spacecake",27],["bluedream",26]],{intro:"Off-grid means no excuses. Battle me.",lose:"Back to the yurt."});
+/* rivals (auto-scaling handled in engine) */
+const RIVAL_BASE={
+  simon:{name:"Simon",glyph:"📱",team:[["ls1",7],["parthree",6]],
+    intro:["Remind me: I don't lose in my own simulation.","Have I ever shown you my selfie with Will Kassouf?","People fear my methods because they don't understand them."],
+    lose:"Fuming. Absolutely fuming. Threat Level: Midnight.",
+    win:"Called it. I may actually control the weather, you know."},
+  kettle:{name:"Kettle",glyph:"🪟",team:[["sweettooth",7],["soapbar",6]],
+    intro:["*strong nod*","Five in five minutes. The extra minute's for the doors.","There is no way I could ever be considered a Geoff."],
+    lose:"Fair. That was a 7.5 on the Richter scale for me.",
+    win:"No stress on the bless. Go again when you're ready."},
+  oli:{name:"Oli","glyph":"🎭",team:[["wasabiseed",7],["smallblind",6]],
+    intro:["Touch and love, love and touch.","Eagle has landed. Biggest drop yet.","Sorry — did I just do something brilliant again?"],
+    lose:"Unbelievable scenes. Sorry. Sorry for being brilliant.",
+    win:"Up the Fitzzz!"},
+};
+/* TPT chip holders */
+T("sam","Sam Cheeseman","🧀",[["cheese",10],["bigblind",11],["exodus",12]],{chip:1,ai:2,reward:150,
+  intro:"Cash is king. But card is Queen. God save the Queen. Amen. Shall we?",
+  lose:"Cheeseman 2.0, on the floor. Take the chip — you want cash or bank?",
+  rematch:[["exodus",32],["allinmon",33],["queencheese",35]]});
+T("palmer","Matt Palmer","🎴",[["clarety",14],["birdie",15],["turbovan",15]],{chip:2,ai:2,reward:200,
+  intro:"More pumped than a primary school teacher's basketball. Tee off.",
+  lose:"We'll be done in time for the royal marine troops on the green. Chip's yours.",
+  rematch:[["clarety",34],["albatross",36],["turbovan",35]]});
+T("butcher","The Butcher","🔪",[["clubsando",18],["stardawg",18],["trainwreck",19]],{chip:3,ai:2,reward:260,
+  intro:"Prime cuts only in this town. Show me yours.",
+  lose:"Well butchered. The chip is yours — trim the fat off your team next.",
+  rematch:[["clubsando",36],["chemdog",37],["trainwreck",38]]});
+T("elrond","Elrond","🧝",[["amnesia",22],["jackherer",22],["totalamnesia",23]],{chip:4,ai:2,reward:320,
+  intro:"One does not simply walk past the Council of Elrond.",
+  lose:"You had my curiosity. Now you have my chip.",
+  rematch:[["totalamnesia",38],["channelhaze",39],["andromedamon",41]]});
+T("quadzilla","Quadzilla","🦖",[["gorillag",25],["gg4",26],["castlekush",27]],{chip:5,ai:2,reward:400,
+  intro:"120 people in the gym tonight? Fine. You'll do. LEGS.",
+  lose:"Respectable squat depth. The chip's in the protein tub.",
+  rematch:[["gg4",40],["castlekush",41],["greatdane",42]]});
+T("pope","The Pope","⛪",[["nlights",28],["spacecake",29],["dotn",30]],{chip:6,ai:2,reward:480,
+  intro:"The Pope abides. Confess your team sheet.",
+  lose:"Blessed. Genuinely blessed. Take the chip, my child.",
+  rematch:[["dotn",42],["moonrock",42],["andromedamon",44]]});
+T("queenc","Queen Cheese","👑",[["exodus",32],["gdp",32],["queencheese",34]],{chip:7,ai:3,reward:600,
+  intro:"You've come deep into the forest for a coronation. Kneel.",
+  lose:"Long live the new contender. The chip smells incredible, by the way.",
+  rematch:[["queencheese",45],["lpcdeluxe",45],["za",46]]});
+T("daddy","The Daddy","🎩",[["allinmon",35],["za",36],["greatdane",37]],{chip:8,ai:3,reward:800,
+  intro:"House rules: no loop, usual format, usual banter. #doyouwantit",
+  lose:"The Daddy approves. Eight chips. The Masters awaits you, kid.",
+  rematch:[["allinmon",47],["za",48],["greatdane",48]]});
+/* Masters gauntlet handled via rivals + volcano in engine */
+
+/* ================= NPC PLACEMENTS ================= */
+/* type: talk|trainer|shop|heal|quest|gamble|golf|quiz|craft|stash|board|block|legend */
+const NPCS=[
+ {id:"nb",map:"annexe_int",x:3,y:1,glyph:"📌",type:"board",name:"Notice Board"},
+ {id:"bed",map:"annexe_int",x:7,y:1,glyph:"🛏️",type:"heal",name:"The Good Sofa"},
+ {id:"stash",map:"annexe_int",x:2,y:3,glyph:"📦",type:"stash",name:"The Stash"},
+ {id:"craft",map:"annexe_int",x:7,y:3,glyph:"🛠️",type:"craft",name:"Rolling Station"},
+ {id:"quiz",map:"annexe_int",x:5,y:1,glyph:"❓",type:"quiz",name:"Quiz Corner"},
+ {id:"kettle_ow",map:"deal",x:6,y:10,glyph:"🪟",type:"rival",rival:"kettle",name:"Kettle"},
+ {id:"simon_ow",map:"stonelees",x:12,y:5,glyph:"📱",type:"rival",rival:"simon",name:"Simon"},
+ {id:"oli_ow",map:"beach",x:12,y:4,glyph:"🎭",type:"rival",rival:"oli",name:"Oli"},
+ {id:"primoshop",map:"primo_int",x:4,y:1,glyph:"🧑‍🌾",type:"shop",shop:"primo",name:"Primo Clerk"},
+ {id:"tescoshop",map:"tesco_int",x:4,y:1,glyph:"🧑‍💼",type:"shop",shop:"tesco",name:"Tesco Colleague"},
+ {id:"benbags",map:"deal",x:20,y:8,glyph:"🎒",type:"shop",shop:"benbags",name:"Benbags",
+   lines:["They call me Benbags. Back from the festival. What d'you need?"]},
+ {id:"chi",map:"chis_int",x:4,y:1,glyph:"🍜",type:"heal",name:"Chi",
+   lines:["On the house, G. Team's back to full. The gardens out back are lovely this time of year."]},
+ {id:"lauren",map:"ldogs_int",x:4,y:1,glyph:"🏡",type:"quest",quest:"botbot",name:"Lauren (L-Dog)",
+   lines:["Kettle's left his bot bot here AGAIN. Found it under the sofa. Take it to him, would you? I'm cooking."]},
+ {id:"sofa",map:"ldogs_int",x:6,y:4,glyph:"🛋️",type:"talk",name:"The Sofa",
+   lines:["You check under the sofa. A grim ecosystem. Also: headphones? No. Just crumbs."]},
+ {id:"sam_np",map:"clubhouse_int",x:5,y:3,glyph:"🧀",type:"trainer",trainer:"sam",name:"Sam Cheeseman"},
+ {id:"bowden",map:"clubhouse_int",x:8,y:5,glyph:"🎰",type:"gamble",name:"Jack Bowden",
+   lines:["Bowden's Bets, est. whenever. Higher or lower, streaks pay. The Elizabeth line is crazy rn, no cap."]},
+ {id:"bremner",map:"clubhouse_int",x:2,y:5,glyph:"📸",type:"talk",name:"Jason Bremner",
+   lines:["Technical victory, last night. On paper. The photographers thought a few of us were together — flattering, honestly.","Push me. And then just touch."]},
+ {id:"seagull",map:"beach",x:17,y:2,glyph:"🕊️",type:"talk",name:"Seagull",
+   lines:["More pumped than a tractor's tyre for this weather.","Quiz answer last week? Catherine Zeta Jones. I said it with such confidence too.","Is 'more than happy' something like 'ecstatic', or is that going too far?"]},
+ {id:"hawx",map:"deal",x:14,y:6,glyph:"🦅",type:"talk",name:"Joe Hawx",
+   lines:["How did the poker go?","There's a version of Sam out there that looks like the Hills Have Eyes. I've seen it. Fantastic news, otherwise."]},
+ {id:"malachi",map:"malachi_int",x:4,y:1,glyph:"💾",type:"quest",quest:"seo",name:"Malachi",
+   lines:["Are you having relations with a database again? Look — I need field data. Beat 4 route trainers and I'll pay handsomely. Great SEO on your way out, please."]},
+ {id:"kit_np",map:"canterburyrd",x:3,y:4,glyph:"🎭",type:"trainer",trainer:"hiker",name:"Kit"},
+ {id:"palmer_np",map:"stonelees",x:13,y:2,glyph:"🎴",type:"trainer",trainer:"palmer",name:"Matt Palmer"},
+ {id:"butcher_np",map:"butcher_int",x:4,y:1,glyph:"🔪",type:"trainer",trainer:"butcher",name:"The Butcher"},
+ {id:"elrond_np",map:"canterburyrd",x:13,y:6,glyph:"🧝",type:"trainer",trainer:"elrond",name:"Elrond"},
+ {id:"quadz_np",map:"dovergym_int",x:4,y:1,glyph:"🦖",type:"trainer",trainer:"quadzilla",name:"Quadzilla"},
+ {id:"pope_np",map:"chapel_int",x:4,y:1,glyph:"⛪",type:"trainer",trainer:"pope",name:"The Pope"},
+ {id:"queenc_np",map:"tilgate_int",x:4,y:1,glyph:"👑",type:"trainer",trainer:"queenc",name:"Queen Cheese"},
+ {id:"daddy_np",map:"daddy_int",x:4,y:1,glyph:"🎩",type:"trainer",trainer:"daddy",name:"The Daddy"},
+ {id:"t1",map:"golfroute",x:4,y:6,glyph:"🧢",type:"trainer",trainer:"caddy1",name:"Caddy Dom"},
+ {id:"t2",map:"golfroute",x:12,y:12,glyph:"⛳",type:"trainer",trainer:"caddy2",name:"Range Rat Tom"},
+ {id:"t3",map:"golfroute",x:8,y:9,glyph:"🏌️",type:"trainer",trainer:"golfer1",name:"Rob J. Burnham"},
+ {id:"t4",map:"sandwichroad",x:6,y:2,glyph:"🐕",type:"trainer",trainer:"walker1",name:"Dog Walker Jan"},
+ {id:"t5",map:"sandwichroad",x:14,y:6,glyph:"🚐",type:"trainer",trainer:"vanman",name:"Van Man Jerry"},
+ {id:"t6",map:"doverroad",x:7,y:4,glyph:"💪",type:"trainer",trainer:"gymbro1",name:"Gym Bro Clint"},
+ {id:"t7",map:"sandwich",x:14,y:8,glyph:"🍺",type:"trainer",trainer:"stagger",name:"Stag Party Brad"},
+ {id:"t8",map:"beach",x:4,y:2,glyph:"🦆",type:"trainer",trainer:"birdlady",name:"Twitcher Maureen"},
+ {id:"t9",map:"dover",x:13,y:3,glyph:"🎣",type:"trainer",trainer:"fisherman",name:"Docker Pete"},
+ {id:"t10",map:"tilgate",x:12,y:8,glyph:"🌲",type:"trainer",trainer:"forester",name:"Forester George"},
+ {id:"t11",map:"dernwood",x:12,y:8,glyph:"⛺",type:"trainer",trainer:"camper",name:"Glamper Emily"},
+ {id:"golfpro",map:"stonelees",x:5,y:5,glyph:"🏆",type:"golf",name:"The Starter",
+   lines:["Par 3 challenge: 20 coins a round, three swings, payouts under par. The famous Jacket watches those who go 3-under."]},
+ {id:"honesty_np",map:"dernwood",x:9,y:4,glyph:"📦",type:"quest",quest:"honesty",name:"Honesty Box",
+   lines:["A wooden box. A slot. Nobody watching. If there's one man who's never put money in one of these..."]},
+ {id:"kettle_range",map:"golfroute",x:14,y:2,glyph:"🧰",type:"quest",quest:"seveniron",name:"Kettle's Note",
+   lines:["A note pinned to the fence: 'Have I lost my clubs or do you have them? Especially the 7-iron. — K xx'"]},
+ {id:"iron_spot",map:"stonelees",x:15,y:8,glyph:"⛳",type:"pickup",item:"seveniron",flag:"ironfound",name:"Something in the rough"},
+ {id:"stargazer",map:"sandown",x:8,y:7,glyph:"🔭",type:"quest",quest:"telescope",name:"Stargazer",hours:[3],
+   lines:["Clear tonight. You can see Andromeda. Two and a half million light years, mate. If you had The Telescope you could really commune with it..."]},
+ {id:"tommy",map:"millhill",x:14,y:6,glyph:"🧒",type:"talk",name:"Tommy",
+   lines:["Kettle showed us the planet parade through the telescope! The dew ruined it in ten minutes."]},
+ {id:"olroyd",map:"deal",x:2,y:10,glyph:"👴",type:"talk",name:"Bald Man of The Grove",
+   lines:["Both of us in The Grove are bald, and we've both got bald men names. That's just how it works.","In my sixties but I could still rave, me."]},
+ {id:"pat",map:"sandwich",x:6,y:7,glyph:"👵",type:"talk",name:"Pat",
+   lines:["Roast on Sunday, if Kettle remembers. He booked speed dating once by accident, you know."]},
+ {id:"jarrod",map:"dover",x:12,y:6,glyph:"🧔",type:"talk",name:"Jarrod",
+   lines:["Champions League final's on the 31st. Plan accordingly, that's all I'm saying."]},
+ {id:"barham",map:"canterburyrd",x:10,y:2,glyph:"🗣️",type:"talk",name:"Barham Local",
+   lines:["The pronunciation clip on the Wikipedia page for Barham? Sounds EXACTLY like a bloke from Deal. Uncanny.","How would you even stumble across that, though?"]},
+ {id:"moonman",map:"sandown",x:4,y:8,glyph:"🌝",type:"talk",name:"Moon Sceptic",
+   lines:["Moon looks well fake tonight. Haven't even done the shadow properly. 'Maximum gibbous' they'll call it.","All of them — in the pockets of Big Moon. While they turn the sun's brightness up."]},
+ {id:"couple",map:"beach",x:9,y:5,glyph:"🕴️",type:"talk",name:"Man in Villa Top",
+   lines:["I'll be wearing a Villa top so you can spot me. Keep an eye out for men having affairs, too. Sentimental ones."]},
+ {id:"eaglespot",map:"deal",x:23,y:7,glyph:"🪦",type:"legend",legend:"eagle",name:"Caesar Memorial Plaque",
+   req:"eagleq",hours:[3],lvl:42,
+   lines:["The plaque hums at night. Something enormous circles overhead..."]},
+ {id:"androspot",map:"sandown",x:6,y:3,glyph:"✨",type:"legend",legend:"andromedamon",name:"Telescope Point",
+   req:"telescopeq",hours:[3],lvl:45,
+   lines:["With The Telescope set up, Andromeda feels close enough to touch. It notices you noticing."]},
+ {id:"jeruspot",map:"cave",x:9,y:2,glyph:"🕯️",type:"legend",legend:"jerusalem",name:"Chalk Marking",
+   lvl:44,lines:["'JUST STOPPING OFF TO GRAB JERUSALEM' — the chalk is fresh. The air is heavy."]},
+ {id:"jacketspot",map:"masters",x:5,y:2,glyph:"🧥",type:"legend",legend:"greenjacket",name:"The Jacket Stand",
+   req:"golf3under",lvl:46,lines:["The famous LBT Jacket. It has judged every swing you've ever made. It stirs."]},
+ {id:"volcspot",map:"masters",x:6,y:2,glyph:"🌋",type:"champion",name:"THE VOLCANO",
+   lines:["The shared prized possession sits on its plinth. The bag inflates on its own. It has been waiting."]},
+ {id:"gatekeep",map:"golfroute",x:8,y:16,glyph:"🛑",type:"block",req:1,name:"Course Marshal",
+   lines:["Members and chip-holders only past here. Beat Sam Cheeseman at the Clubhouse in Deal for your first TPT chip."]},
+ {id:"lottoclerk",map:"tesco_int",x:2,y:1,glyph:"🎫",type:"quest",quest:"lotto",name:"Lottery Counter",
+   lines:["Lotto or Euromillions? Four numbers on Euromillions is only £22, which is fucking absurd, frankly."]},
+];
+
+/* ================= SHOPS ================= */
+const SHOPS={
+  primo:{name:"Top Primo",tag:"the good stuff",stock:["tin","gtin","cuppa","nugbutty","water","coffee","deepheat","snackbox","grinder","kingskins","glassbong","scopelens"]},
+  tesco:{name:"Mill Hill Tesco",tag:"every little helps",stock:["tin","cuppa","nugbutty","nandositem","water","coffee","snackbox","bugspray","sidequest","papers","lotto","adrenaline","redbull","gameface"]},
+  benbags:{name:"Benbags' Rucksack",tag:"back from the festival",stock:["gtin","ptin","fullbless","softreset","chillpill","botbot","leftovers","clubcarditem","villatop","lbttowel","focusgrit"]},
+};
+
+/* ================= QUESTS ================= */
+const QUESTS={
+  botbot:{name:"The Bot Bot Run",giver:"Lauren",desc:"Return Kettle's bot bot (found under L-Dog's sofa) to Kettle in Deal.",
+    steps:[{t:"give",item:"qbotbot",to:"kettle_ow"}],reward:{coins:120,items:{grinder:1}},
+    hint:"Talk to Lauren at L-Dog's (west Deal), then find Kettle."},
+  lotto:{name:"The Lottery Run",giver:"Kettle",desc:"Buy 4 Lottery Tickets from Mill Hill Tesco for Kettle. 29 is key.",
+    steps:[{t:"collect",item:"lotto",n:4}],reward:{coins:300},
+    hint:"The Tesco counter sells them. Don't look at the lucky dip till after."},
+  seveniron:{name:"The Lost 7-Iron",giver:"Kettle's Note",desc:"Find Kettle's 7-iron somewhere in the rough at Stonelees.",
+    steps:[{t:"item",item:"seveniron"}],reward:{coins:150,items:{kingskins:1}},
+    hint:"Check the rough on the east side of Stonelees."},
+  seo:{name:"Field Data Audit",giver:"Malachi",desc:"Defeat 4 route trainers so Malachi can normalise his database.",
+    steps:[{t:"defeatAny",n:4}],reward:{coins:350,items:{clubcarditem:1}},
+    hint:"Route trainers count. Great SEO, by the way."},
+  honesty:{name:"The Honesty Box",giver:"Dernwood Farm",desc:"Put 50 coins in the honesty box. Nobody is watching. That's the point.",
+    steps:[{t:"pay",n:50}],reward:{items:{ptin:1},flag:"honest"},
+    hint:"It's at Dernwood Farm, by the logs and kindling."},
+  reminders:{name:"The Remind-Me Agenda",giver:"Notice Board",desc:"Seven cryptic Remind-Me notes are scattered across Kent. Collate the agenda.",
+    steps:[{t:"collect",item:"note",n:7}],reward:{coins:400,items:{focusgrit:1}},
+    hint:"Sparkling spots, odd corners, interiors. Cryptic, I know."},
+  eagleq:{name:"Eagle Delivery",giver:"Oli",desc:"Deliver the Volcano Bag to the Annexe notice board. Then listen for wings at the Plaque, at night.",
+    steps:[{t:"give",item:"volcanobag",to:"nb"}],reward:{coins:200,flag:"eagleq"},
+    hint:"Oli hands you the bag once you hold 4 chips."},
+  telescope:{name:"Telescope Night",giver:"Kettle",desc:"Kettle lends you The Telescope once you hold 6 chips. Take it to Sandown Castle at night.",
+    steps:[{t:"flagonly"}],reward:{},
+    hint:"Sandown Castle, night phase, Telescope in bag."},
+  quizq:{name:"Quiz Night",giver:"Quiz Corner",desc:"Answer 3 questions of pure Deal lore at the Annexe.",
+    steps:[{t:"flag",flag:"quizdone"}],reward:{items:{glassbong:1},coins:150},
+    hint:"No conferring."},
+};
+/* Remind-Me note spots (hidden pickups) */
+const NOTESPOTS=[
+ {map:"annexe",x:13,y:3,text:"Remind me: evil cat donut"},
+ {map:"deal",x:24,y:11,text:"Remind me: preroll plans FAQ"},
+ {map:"beach",x:5,y:6,text:"Remind me: disconcerting AI-generated video"},
+ {map:"peace",x:6,y:6,text:"Remind me: Shepherd"},
+ {map:"golfroute",x:16,y:6,text:"Remind me: 'she's only bloody back in Greece!'"},
+ {map:"sandwichroad",x:2,y:7,text:"Remind me: Crimea River by Michael Bublé"},
+ {map:"dernwood",x:4,y:6,text:"Remind me: agent of chill"},
+];
+
+/* ================= QUIZ ================= */
+const QUIZ=[
+ {q:"What's the code phrase for a completed pickup?",a:["Eagle has landed","Package secured","The kettle's boiled"],c:0},
+ {q:"Kettle could wrestle five women in five minutes. What's the extra minute for?",a:["Warming up","Kicking doors down","A strong nod"],c:1},
+ {q:"Which garden is 'the blueprint for efficiency'?",a:["Kearsney Abbey","The Garden of Eden","The Annexe Garden"],c:2},
+ {q:"What number is 'key' and 'part of the starter pack'?",a:["7","29","42"],c:1},
+ {q:"A banger on the beach is strictly...",a:["Non-sexual","Weather permitting","Members only"],c:0},
+ {q:"Who could never, under any circumstances, be considered a Geoff?",a:["Simon","Oli","Kettle"],c:2},
+ {q:"What ruined the telescope at Sandown?",a:["The dew","The Po Po","Big Moon"],c:0},
+ {q:"Watkins will score around...",a:["The 60th minute","83–86","Full time"],c:1},
+];
+
+/* ================= ACHIEVEMENTS ================= */
+const ACHV=[
+ {id:"firstcatch",name:"First Tin",desc:"Catch your first wild strain."},
+ {id:"catch10",name:"Field Survey",desc:"Catch 10 different strains."},
+ {id:"catch30",name:"Head of Herbal Remedies",desc:"Catch 30 different strains."},
+ {id:"catch60",name:"The Full Dex Energy",desc:"Catch 60 different strains."},
+ {id:"chip1",name:"Cash or Bank?",desc:"Win your first TPT chip."},
+ {id:"chip8",name:"The Usual Players",desc:"Hold all 8 TPT chips."},
+ {id:"champion",name:"LBT Masters Champion",desc:"Subdue THE VOLCANO at the Masters."},
+ {id:"evolve1",name:"Glow Up",desc:"Evolve a strain."},
+ {id:"lvl30",name:"Sharpened Tools",desc:"Raise a strain to level 30."},
+ {id:"lvl50",name:"Rocky With A Bit Of Hitch",desc:"Raise a strain to level 50."},
+ {id:"rich",name:"Benbags-4-Balance",desc:"Hold 2,000 coins at once."},
+ {id:"golfwin",name:"Under Par",desc:"Finish the Par 3 challenge under par."},
+ {id:"golf3",name:"Jacket Watch",desc:"Go 3-under at the Par 3 challenge."},
+ {id:"streak5",name:"The Elizabeth Line",desc:"Hit a 5-streak at Bowden's Bets."},
+ {id:"honest",name:"The Only Man Who Ever Paid",desc:"Use the honesty box properly."},
+ {id:"allnotes",name:"Agenda Collated",desc:"Collect all 7 Remind-Me notes."},
+ {id:"eagle",name:"It Has Landed",desc:"Catch or defeat The Eagle."},
+ {id:"jerusalem",name:"Grabbed Jerusalem",desc:"Catch or defeat Jerusalem."},
+ {id:"andromeda",name:"Best Thing You've Ever Seen",desc:"Catch or defeat Andromeda."},
+ {id:"jacket",name:"It Chose You",desc:"Catch or defeat The Green Jacket."},
+ {id:"quiz",name:"No Conferring",desc:"Ace the Annexe quiz."},
+ {id:"battles50",name:"The Usual Banter",desc:"Win 50 battles."},
+];
+
+/* phases */
+const PHASES=["Morning","Day","Evening","Night"];
+const PHASE_TINT=["rgba(255,220,150,.10)","rgba(0,0,0,0)","rgba(230,120,60,.14)","rgba(10,20,60,.34)"];
+const STEPS_PER_PHASE=260;
+/* ================= ENGINE ================= */
+function statCalc(base,lvl,isHp){ return isHp? Math.floor(base*2*lvl/100)+lvl+10 : Math.floor(base*2*lvl/100)+5; }
+function movesAt(sp,lvl){ return LEARN[sp].filter(([l])=>l<=lvl).map(([,m])=>m); }
+function mkMon(sp,lvl){
+  const d=DEX[sp], st={hp:statCalc(d.bs[0],lvl,1),atk:statCalc(d.bs[1],lvl),def:statCalc(d.bs[2],lvl),
+    sa:statCalc(d.bs[3],lvl),sd:statCalc(d.bs[4],lvl),spe:statCalc(d.bs[5],lvl)};
+  const ms=movesAt(sp,lvl).slice(-4).map(id=>({id,pp:MOVES[id].pp}));
+  return {uid:Math.floor(R()*1e9),sp,lvl,xp:xpFor(lvl),hp:st.hp,stats:st,moves:ms,status:null,item:null};
+}
+function xpFor(l){ return l*l*l; }
+function recalcStats(m){ const d=DEX[m.sp], pct=m.hp/m.stats.hp;
+  m.stats={hp:statCalc(d.bs[0],m.lvl,1),atk:statCalc(d.bs[1],m.lvl),def:statCalc(d.bs[2],m.lvl),
+    sa:statCalc(d.bs[3],m.lvl),sd:statCalc(d.bs[4],m.lvl),spe:statCalc(d.bs[5],m.lvl)};
+  m.hp=Math.max(1,Math.round(m.stats.hp*pct)); }
+function xpGain(foe,isTrainer){ return Math.max(1,Math.floor(DEX[foe.sp].baseXp*foe.lvl/7*(isTrainer?1.5:1))); }
+
+/* battle-side stat stages & helpers */
+function freshSide(m){ return {mon:m,stg:{atk:0,def:0,sa:0,sd:0,spe:0,acc:0,eva:0},vol:{},pinchUsed:false}; }
+function effStat(side,key){
+  let v=side.mon.stats[key]*STAGE_M(side.stg[key]);
+  if(key==="spe"&&side.mon.status==="CLK") v*=.5;
+  if(key==="atk"&&side.mon.status==="MUN") v*=.5;
+  const it=side.mon.item&&ITEMS[side.mon.item]&&ITEMS[side.mon.item].held;
+  if(it){ if((key==="def"||key==="sd")&&it.defb) v*=it.defb; if(key==="spe"&&it.spdb) v*=it.spdb; }
+  return v;
+}
+function heldOf(m){ return m.item&&ITEMS[m.item]&&ITEMS[m.item].held||null; }
+
+/* damage */
+function calcDamage(atkSide,defSide,mv,weather){
+  const a=atkSide.mon, d=defSide.mon, phys=mv.cat==="P";
+  const atk=effStat(atkSide,phys?"atk":"sa"), def=effStat(defSide,phys?"def":"sd");
+  let pow=mv.pow;
+  if(mv.fx.ohkoLike) return {dmg:Math.max(1,d.hp-1),mult:1,crit:false,eff:"ohko"};
+  const held=heldOf(a);
+  if(held){ if(phys&&held.phys)pow*=held.phys; if(!phys&&held.spec)pow*=held.spec; }
+  if(weather==="heat"&&mv.type==="Sativa")pow*=1.25;
+  if(weather==="heat"&&mv.type==="Haze")pow*=.8;
+  if(weather==="rain"&&mv.type==="Haze")pow*=1.25;
+  if(weather==="rain"&&mv.type==="Diesel")pow*=.85;
+  if(weather==="mist"&&mv.cat==="S")pow*=.9;
+  const stab=DEX[a.sp].types.includes(mv.type)?1.5:1;
+  const mult=typeMult(mv.type,DEX[d.sp].types);
+  let critStage=(mv.fx.crit||0)+((held&&held.crit)?1:0);
+  const crit=R()<(critStage>=1?0.125*critStage+0.0625:0.0625);
+  let dmg=(((2*a.lvl/5+2)*pow*(atk/Math.max(1,def)))/50+2)*stab*mult*(crit?1.5:1)*(0.85+R()*0.15);
+  return {dmg:Math.max(1,Math.round(dmg)),mult,crit};
+}
+function accCheck(atkSide,defSide,mv){
+  if(mv.fx.ohkoLike){ // real OHKO-move rules: auto-fail vs a higher-level foe, accuracy shifts with level gap
+    if(defSide.mon.lvl>atkSide.mon.lvl) return false;
+    const acc=clamp(mv.acc+(atkSide.mon.lvl-defSide.mon.lvl),0,100);
+    return R()*100<acc;
+  }
+  if(mv.acc>=100&&atkSide.stg.acc>=0&&defSide.stg.eva<=0) return true;
+  let acc=mv.acc*STAGE_M(atkSide.stg.acc)/STAGE_M(defSide.stg.eva);
+  const held=heldOf(atkSide.mon); if(held&&held.acc)acc*=held.acc;
+  return R()*100<acc;
+}
+/* AI: should this trainer's foe switch out for a better matchup? Only ai level 2-3 ever consider it. */
+function aiPickSwitch(b,mySide){
+  if(!b.trainer||!b.foeTeam||(b.ai||(b.trainer&&b.trainer.ai)||1)<2) return null;
+  const cur=b.foeTeam[b.foeTi]; if(cur.mon.hp<=0) return null;
+  const myTypes=DEX[mySide.mon.sp].types;
+  const threat=Math.max(...myTypes.map(t=>typeMult(t,DEX[cur.mon.sp].types)));
+  if(threat<2) return null; // only bail from a genuinely bad matchup
+  if(cur.mon.hp>cur.mon.stats.hp*.5&&R()<0.55) return null; // don't always bail early even when threatened
+  let bestI=-1,bestThreat=threat;
+  b.foeTeam.forEach((s,i)=>{ if(i===b.foeTi||s.mon.hp<=0)return;
+    const t=Math.max(...myTypes.map(ty=>typeMult(ty,DEX[s.mon.sp].types)));
+    if(t<bestThreat){bestThreat=t;bestI=i;} });
+  return bestI>=0?bestI:null;
+}
+/* AI: pick action for foe. lvl of intelligence 1-3 */
+function aiPick(foeSide,mySide,weather,ai){
+  const mvs=foeSide.mon.moves.filter(m=>m.pp>0);
+  if(!mvs.length) return {type:"struggle"};
+  if(ai>=2&&foeSide.mon.hp<foeSide.mon.stats.hp*.3){
+    const h=mvs.find(m=>MOVES[m.id].fx.heal); if(h&&R()<.6) return {type:"move",mv:h};
+  }
+  let best=null,bestScore=-1;
+  mvs.forEach(m=>{
+    const M0=MOVES[m.id]; let score;
+    if(M0.cat==="T"){
+      score=15;
+      if(M0.fx.st&&!mySide.mon.status)score=ai>=2?38:22;
+      if(M0.fx.heal)score=foeSide.mon.hp<foeSide.mon.stats.hp*.55?45:4;
+      if(M0.fx.buff&&Object.keys(M0.fx.buff).filter(k=>k!=="self"&&k!=="onKO").every(k=>(foeSide.stg[k]||0)<2))score=ai>=2?30:18;
+      if(M0.fx.deb)score=20;
+      score*= (0.7+R()*0.6);
+    } else {
+      const {dmg,mult}=calcDamage(foeSide,mySide,M0,weather);
+      score=Math.min(dmg,mySide.mon.hp)*(mult>=2?1.3:mult<=0.5?0.5:1)*(M0.acc/100);
+      if(dmg>=mySide.mon.hp)score*=ai>=2?2.2:1.4;
+      if(ai===1)score*=(0.6+R()*0.8);
+    }
+    if(score>bestScore){bestScore=score;best=m;}
+  });
+  return {type:"move",mv:best};
+}
+/* catch */
+function catchRoll(mon,ballMult){
+  const d=DEX[mon.sp];
+  let bonus=1; if(mon.status==="DAZ")bonus=2; else if(mon.status)bonus=1.5;
+  const a=((3*mon.stats.hp-2*mon.hp)*d.cr*ballMult*bonus)/(3*mon.stats.hp);
+  const shakes=Math.min(3,Math.floor(a/85)+ (R()*255<a?3:ri(0,2)));
+  return {caught:R()*255<a,shakes:Math.max(1,shakes)};
+}
+/* rival team scaling */
+function rivalTeam(rid,chips){
+  const base=RIVAL_BASE[rid], n=chips>=6?3:chips>=3?3:2, lvl=7+chips*4;
+  const pools={simon:["ls1","ls11","ls111","parthree","birdie","moonrock"],
+    kettle:["sweettooth","sweetmolar","soapbar","triplezero","castlekush","lpc"],
+    oli:["wasabiseed","wasabi","wasabiprime","smallblind","bigblind","allinmon"]};
+  const p=pools[rid], team=[];
+  for(let i=0;i<n;i++){ const tier=chips>=6?2:chips>=3?1:0;
+    team.push([p[Math.min(p.length-1,i*2+tier)],clamp(lvl+i*2-2,5,50)]); }
+  return team;
+}
+/* masters gauntlet team for final */
+function mastersTeam(rid){ const p={simon:[["ls111",44],["moonrock",43],["albatross",45]],
+  kettle:[["triplezero",44],["sweetmolar",43],["castlekush",45]],
+  oli:[["wasabiprime",44],["allinmon",43],["bangroyale",45]]}; return p[rid]; }
+
+/* ---- save/load ---- */
+const SAVEKEY="dealdex_v2";
+let MEMSAVE=null;
+function saveGame(G){ const s=JSON.stringify({v:2,G:{...G,battle:null,ui:null}});
+  try{localStorage.setItem(SAVEKEY,s);}catch(e){MEMSAVE=s;} }
+function loadGame(){ try{const s=localStorage.getItem(SAVEKEY)||MEMSAVE; if(!s)return null;
+  const o=JSON.parse(s); return o&&o.v===2?o.G:null;}catch(e){return null;} }
+function hasSave(){ try{return !!(localStorage.getItem(SAVEKEY)||MEMSAVE);}catch(e){return !!MEMSAVE;} }
+function clearSave(){ try{localStorage.removeItem(SAVEKEY);}catch(e){} MEMSAVE=null; }
+
+/* ---- inventory helpers ---- */
+function addItem(bag,id,n=1){ const b={...bag}; b[id]=(b[id]||0)+n; if(b[id]<=0)delete b[id]; return b; }
+
+/* ---- quest bus: returns {G,msgs[]} ---- */
+function questTick(G,type,payload){
+  const msgs=[]; let g={...G,quests:{...G.quests},flags:{...G.flags},bag:{...G.bag}};
+  const prog=(qid,done,rewardNow)=>{
+    const q=QUESTS[qid]; if(!g.quests[qid]||g.quests[qid].done)return;
+    if(done){ g.quests[qid]={...g.quests[qid],done:true};
+      const r=q.reward||{};
+      if(r.coins){g.coins+=r.coins;msgs.push("+"+r.coins+" coins");}
+      if(r.items)Object.entries(r.items).forEach(([id,n])=>{g.bag=addItem(g.bag,id,n);msgs.push("Got "+ITEMS[id].name+"!");});
+      if(r.flag)g.flags[r.flag]=true;
+      msgs.push("Quest complete: "+q.name+"!"); sfx.chip();
+    }
+  };
+  if(type==="defeatTrainer"){
+    g.stats={...g.stats,tbeat:(g.stats.tbeat||0)+1};
+    if(g.quests.seo&&!g.quests.seo.done){
+      const c=(g.quests.seo.c||0)+1; g.quests.seo={...g.quests.seo,c};
+      if(c<4)msgs.push("Field data: "+c+"/4 trainers logged.");
+      prog("seo",c>=4);
+    }
+  }
+  if(type==="item"){
+    const id=payload;
+    if(id==="lotto"&&g.quests.lotto&&!g.quests.lotto.done){
+      const c=(g.bag.lotto||0); msgs.push("Tickets: "+c+"/4. 29 is key.");
+    }
+    if(id==="seveniron")prog("seveniron",true);
+    if(id==="note"&&g.quests.reminders&&!g.quests.reminders.done){
+      const c=(g.bag.note||0); msgs.push("Agenda items: "+c+"/7");
+      if(c>=7){prog("reminders",true);g.achq=[...(g.achq||[]),"allnotes"];}
+    }
+  }
+  return {g,msgs};
+}
+/* achievements check */
+function checkAchv(G,push){
+  const has=id=>G.achv[id];
+  const caught=Object.values(G.dex).filter(d=>d.caught).length;
+  const grant=id=>{ if(!G.achv[id]){G.achv={...G.achv,[id]:true};const a=ACHV.find(x=>x.id===id);push("🏅 "+a.name);sfx.lvl();} };
+  if((G.stats.catches||0)>=1)grant("firstcatch"); if(caught>=10)grant("catch10"); if(caught>=30)grant("catch30"); if(caught>=60)grant("catch60");
+  if(G.chips.length>=1)grant("chip1"); if(G.chips.length>=8)grant("chip8");
+  if(G.coins>=2000)grant("rich");
+  if(G.party.some(m=>m.lvl>=30))grant("lvl30"); if(G.party.some(m=>m.lvl>=50))grant("lvl50");
+  if(G.flags.honest)grant("honest"); if(G.flags.quizdone)grant("quiz");
+  if(G.flags.champion)grant("champion"); if(G.flags.golfunder)grant("golfwin"); if(G.flags.golf3under)grant("golf3");
+  if(G.flags.streak5)grant("streak5");
+  if((G.stats.wins||0)>=50)grant("battles50");
+  ["eagle","jerusalem","andromeda","jacket"].forEach(k=>{if(G.flags["boss_"+k])grant(k);});
+  if(G.flags.evolved)grant("evolve1");
+  (G.achq||[]).forEach(grant); G.achq=[];
+  return G;
+}
+/* ================= UI CORE ================= */
+const VW=15, VH=11, TS=Math.floor(462/VW); /* VH is the fallback; World computes live rows from screen height */
+function useViewRows(){
+  const [rows,setRows]=useState(VH);
+  useEffect(()=>{
+    function calc(){
+      // In an itch.io iframe, window.innerHeight is the iframe height (often fixed small),
+      // so also consider the physical device height (screen.height IS readable cross-origin).
+      // Use whichever gives more usable room, minus fixed chrome (~340px).
+      let vpH=window.innerHeight||600;
+      try{ if(window.screen&&window.screen.height) vpH=Math.max(vpH, window.screen.height*0.82); }catch(e){}
+      const avail=vpH-340;
+      const r=clamp(Math.floor(avail/TS),9,21);
+      setRows(r%2===0?r-1:r); // keep odd so the hero stays centred
+    }
+    calc();
+    window.addEventListener("resize",calc);
+    window.addEventListener("orientationchange",calc);
+    return ()=>{window.removeEventListener("resize",calc);window.removeEventListener("orientationchange",calc);};
+  },[]);
+  return rows;
+}
+const TILE_BG={"#":"#2f5a3f","^":"#8a815f","w":"#3a6ea5","b":"#9c5a3f",".":"#c7dab0","M":"#3a2f52",
+  "g":"#7fae5e","G":"#5d9448",",":"#e6d8a8","F":"#c7dab0","=":"#b08968","c":"#c7dab0","*":"#c7dab0"};
+const TILE_GL={"#":"🌳","^":"⛰️","w":"","b":"🏠","F":"🌼","=":"🪵","*":"✨","G":"","M":"⛳"};
+const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+function Btn({on,col,children,dis,style,cls}){return <button onClick={on} disabled={dis} className={"bsm press "+(cls||"")}
+  style={{background:col||"var(--send)",...style}}>{children}</button>;}
+function Pill({col,children}){return <span className="pill" style={{background:col}}>{children}</span>;}
+function HPBar({hp,max,w}){const p=clamp(hp/max*100,0,100);
+  return <div className="hpshine" style={{height:9,background:"rgba(20,40,25,.25)",borderRadius:4,border:"1px solid var(--ink)",width:w||"100%"}}>
+    <div style={{width:p+"%",height:"100%",borderRadius:3,transition:"width .45s",
+      background:p>50?"var(--send)":p>22?"var(--amber)":"var(--stamp)"}}/></div>;}
+function XPBar({m}){const lo=xpFor(m.lvl),hi=xpFor(m.lvl+1),p=clamp((m.xp-lo)/(hi-lo)*100,0,100);
+  return <div style={{height:4,background:"rgba(20,40,25,.25)",borderRadius:2,marginTop:2}}>
+    <div style={{width:p+"%",height:"100%",background:"#5aa7c9",borderRadius:2,transition:"width .4s"}}/></div>;}
+const STATLBL=["HP","ATK","DEF","SP.A","SP.D","SPD"];
+function StrainCard({sp,mon,onClose,dexNo}){
+  const d=DEX[sp], t1=d.types[0], t2=d.types[1], c=TCOL[t1], c2=t2?TCOL[t2]:c;
+  const rare=d.tier>=3?"★★★":d.tier===2?"★★":d.tier===1?"★":"";
+  const holo=d.tier>=2; // higher-rarity strains get a holographic shimmer
+  const sigMoves=(SIGS[sp]||[]).map(([lv,mv])=>MOVES[mv]&&MOVES[mv].name+" (Lv."+lv+")").filter(Boolean);
+  const bst=d.bs.reduce((a,b)=>a+b,0);
+  return <div className="overlay" onClick={onClose} style={{cursor:"pointer"}}>
+    <div className="scroll">
+      <div className="card" style={{background:"linear-gradient(150deg,"+c+","+c2+")",maxWidth:320,margin:"0 auto"}} onClick={e=>e.stopPropagation()}>
+        <div className="cardframe">
+          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:5}}>
+            <b style={{fontSize:16}}>{d.name}</b>
+            <span style={{fontSize:12,fontWeight:700,color:"#b8860b"}}>{rare} #{String(dexNo||d.n).padStart(3,"0")}</span></div>
+          <div className="art" style={{background:"radial-gradient(circle at 40% 30%, "+c+"cc, "+c2+"66)"}}>
+            {holo&&<div className="holo"/>}
+            <div style={{fontSize:64,filter:"drop-shadow(0 3px 4px rgba(0,0,0,.35))"}}>{TGLYPH[t1]}</div>
+            {mon&&<span style={{position:"absolute",top:6,right:8,fontSize:13,fontWeight:700,background:"rgba(0,0,0,.5)",color:"#fff",borderRadius:6,padding:"1px 6px"}}>Lv.{mon.lvl}</span>}</div>
+          <div style={{display:"flex",gap:5,margin:"7px 0"}}>{d.types.map(t=><span key={t} style={{background:TCOL[t],color:"#fff",fontSize:12,fontWeight:700,padding:"2px 9px",borderRadius:20,border:"1.5px solid rgba(0,0,0,.35)"}}>{TGLYPH[t]} {t}</span>)}</div>
+          <p style={{fontSize:13,fontStyle:"italic",lineHeight:1.25,margin:"4px 0 8px",color:"#33402f"}}>"{d.flavor}"</p>
+          <div style={{display:"grid",gridTemplateColumns:"auto 1fr auto",gap:"3px 7px",alignItems:"center",fontSize:12}}>
+            {d.bs.map((v,i)=>{const disp=mon?mon.stats[["hp","atk","def","spa","spd","spe"][i]]:v;
+              return [<b key={"l"+i} style={{fontWeight:700}}>{STATLBL[i]}</b>,
+                <div key={"b"+i} className="statb"><i style={{width:Math.min(100,v/1.6)+"%",background:"linear-gradient(90deg,"+c+","+c2+")"}}/></div>,
+                <span key={"v"+i} style={{fontWeight:700,textAlign:"right",minWidth:26}}>{disp}</span>];})}
+          </div>
+          <div style={{textAlign:"right",fontSize:11,fontWeight:700,color:"#556",marginTop:3}}>BST {bst}</div>
+          {d.evo&&<div style={{fontSize:12,marginTop:7,padding:"5px 8px",background:"rgba(0,0,0,.06)",borderRadius:7}}>
+            🔁 Evolves into <b>{DEX[d.evo.to].name}</b> at Lv.{d.evo.lvl}</div>}
+          {sigMoves.length>0&&<div style={{fontSize:12,marginTop:6}}>
+            <b>Signature:</b> {sigMoves.join(" · ")}</div>}
+        </div>
+      </div>
+    </div>
+    <button className="btn press" style={{marginTop:8}} onClick={onClose}>Close</button>
+  </div>;
+}
+function MonSprite({sp,size,anim}){const d=DEX[sp],c=TCOL[d.types[0]];
+  return <div className={anim||""} style={{width:size,height:size,borderRadius:"50%",display:"flex",alignItems:"center",justifyContent:"center",
+    background:`radial-gradient(circle at 35% 30%, ${c}dd, ${c}55)`,border:"3px solid var(--ink)",fontSize:size*.5,
+    boxShadow:"inset 0 -6px 12px rgba(0,0,0,.25)"}}>{TGLYPH[d.types[0]]}</div>;}
+function typePills(sp){return DEX[sp].types.map(t=><Pill key={t} col={TCOL[t]}>{t}</Pill>);}
+
+/* ---- initial game ---- */
+function newGame(hero){
+  const starters={simon:"ls1",kettle:"sweettooth",oli:"wasabiseed"};
+  const st=mkMon(starters[hero],5);
+  const quests={}; Object.keys(QUESTS).forEach(q=>quests[q]={active:false,done:false,c:0});
+  return {screen:"world",hero,rivals:Object.keys(RIVAL_BASE).filter(r=>r!==hero),
+    party:[st],box:[],bag:{tin:5,cuppa:2},coins:60,chips:[],flags:{},quests,
+    dex:{[st.sp]:{seen:true,caught:true}},map:"annexe",x:4,y:6,dir:"S",steps:0,phase:1,day:1,
+    weatherOw:"clear",repel:0,achv:{},achq:[],stats:{},beaten:{},rematchAt:{},rivalTier:{simon:-1,kettle:-1,oli:-1},
+    picked:{},mastersStage:0,settings:{sound:true,speed:1},visited:{annexe:true}};
+}
+const SWARMPOOL=["wasabi","gooddog","moonrock","cheese","stardawg","zkittlez","runtz","gelato33","lemonhaze","vandiesel"];
+const swarmOf=day=>SWARMPOOL[day%SWARMPOOL.length];
+function rollWeather(map,phase){const c=MAPS[map].climate;
+  if(MAPS[map].indoor||c==="cave")return "clear";
+  const r=R(); if(c==="coast")return r<.15?"mist":r<.28?"rain":r<.36?"heat":"clear";
+  if(c==="forest")return r<.22?"rain":r<.3?"mist":"clear";
+  return r<.12?"rain":r<.2?"heat":"clear";}
+
+/* ================= APP ================= */
+function App(){
+  const [G,setG]=useState(null);
+  const [ui,setUi]=useState({});     // overlays: dialog, menu, shop, etc.
+  const [toast,setToast]=useState(null);
+  const [evoQ,setEvoQ]=useState([]); // evolution queue
+  const bt=useRef(null);             // mutable battle object
+  const [,force]=useState(0); const rr=()=>force(x=>x+1);
+  const GRef=useRef(G); GRef.current=G;
+  const uiRef=useRef(ui); uiRef.current=ui;
+  const toastQ=useRef([]);
+  const push=useCallback(t=>{toastQ.current.push(t); if(toastQ.current.length===1)playToast();},[]);
+  function playToast(){const t=toastQ.current[0]; if(!t)return; setToast(t);
+    setTimeout(()=>{toastQ.current.shift(); setToast(null); if(toastQ.current.length)setTimeout(playToast,120);},1500);}
+
+  useEffect(()=>{ if(G&&G.settings) SND=G.settings.sound; },[G&&G.settings&&G.settings.sound]);
+
+  /* ---------- OVERWORLD ---------- */
+  const busyRef=useRef(false);
+  function tileAt(map,x,y){const M=MAPS[map]; return (x<0||y<0||x>=M.w||y>=M.h)?"#":M.rows[y][x];}
+  function npcAt(map,x,y){const g=GRef.current;
+    return NPCS.find(n=>n.map===map&&n.x===x&&n.y===y&&npcVisible(n,g));}
+  function npcVisible(n,g){
+    if(n.type==="block")return !g.beaten[n.id];
+    if(n.type==="pickup")return !g.flags[n.flag];
+    if(n.type==="legend"){ if(g.flags["boss_"+(n.legend==="andromedamon"?"andromeda":n.legend==="greenjacket"?"jacket":n.legend)])return n.id==="volcspot";
+      }
+    if(n.hours&&!n.hours.includes(g.phase))return false;
+    if(n.id==="volcspot")return true;
+    return true;}
+  function interact(){
+    const g=GRef.current; if(!g||g.screen!=="world"||busyRef.current||uiRef.current.any)return;
+    const dx=g.dir==="E"?1:g.dir==="W"?-1:0, dy=g.dir==="S"?1:g.dir==="N"?-1:0;
+    const tx=g.x+dx,ty=g.y+dy, n=npcAt(g.map,tx,ty);
+    if(n){handleNpc(n);return;}
+    const M=MAPS[g.map], sg=M.signs[tx+","+ty];
+    if(sg){sfx.blip();openDialog("Sign",[sg]);return;}
+  }
+  function openDialog(name,lines,opts){setUi(u=>({...u,any:1,dialog:{name,lines,i:0,...(opts||{})}}));}
+  function closeUi(k){setUi(u=>{const v={...u};delete v[k];delete v.any;return v;});}
+
+  function handleNpc(n){
+    const g=GRef.current; sfx.blip();
+    /* quest & special hooks first */
+    if(n.type==="rival")return rivalTalk(n,g);
+    if(n.type==="trainer")return trainerTalk(n,g);
+    if(n.type==="shop")return setUi(u=>({...u,any:1,shop:n.shop}));
+    if(n.type==="heal"){healParty();openDialog(n.name,n.lines||["Team's back to full. No stress on the bless. xx"]);return;}
+    if(n.type==="stash")return setUi(u=>({...u,any:1,stash:1}));
+    if(n.type==="craft")return setUi(u=>({...u,any:1,craft:1}));
+    if(n.type==="quiz")return setUi(u=>({...u,any:1,quiz:{qs:[...QUIZ].sort(()=>R()-.5).slice(0,3),i:0,ok:0}}));
+    if(n.type==="gamble")return setUi(u=>({...u,any:1,gamble:{card:ri(2,14),streak:0,pot:0,bet:10}}));
+    if(n.type==="golf")return setUi(u=>({...u,any:1,golf:{stage:"intro",hole:1,strokes:0,shots:[]}}));
+    if(n.type==="board")return boardTalk(g);
+    if(n.type==="block"){
+      if(g.chips.length>=n.req){setG(p=>({...p,beaten:{...p.beaten,[n.id]:true}}));openDialog(n.name,["Chip verified. Go on through — mind the divots."]);}
+      else openDialog(n.name,n.lines); return;}
+    if(n.type==="pickup"){
+      setG(p=>{let q=questTick({...p,flags:{...p.flags,[n.flag]:true},bag:addItem(p.bag,n.item,1)},"item",n.item);
+        q.msgs.forEach(push); return checkAchv(q.g,push);});
+      sfx.coin(); openDialog(n.name,["Found "+ITEMS[n.item].name+"! "+ITEMS[n.item].desc]); return;}
+    if(n.type==="legend")return legendTalk(n,g);
+    if(n.type==="champion")return championTalk(g);
+    if(n.type==="quest")return questTalk(n,g);
+    /* talk */
+    const li=(g.flags["talk_"+n.id]||0)%(n.lines?n.lines.length:1);
+    setG(p=>({...p,flags:{...p.flags,["talk_"+n.id]:li+1}}));
+    openDialog(n.name,[n.lines?n.lines[li]:"..."]);
+  }
+  function boardTalk(g){
+    const lines=[
+      "SECURITY COUNCIL NOTICE BOARD — #agm",
+      "Today's swarm: "+DEX[swarmOf(g.day)].name+" — sightings everywhere. (Day "+g.day+", "+PHASES[g.phase]+")",
+      "TPT chips held: "+g.chips.length+"/8. The Masters opens at 8.",
+      "MINUTES: Oli 'Dandini' Tester — courier, showman, apologises after brilliance. Kettle — window rounds by day, strong nods by night. Simon — builds an app for everything, may control the weather.",
+      "THE TPT NINE: The Daddy, The Pope, Elrond, Quadzilla, Seagull, The Butcher, Queen Cheese... the usual players, the usual format (no loop).",
+    ];
+    if(!g.quests.reminders.active){
+      setG(p=>({...p,quests:{...p.quests,reminders:{...p.quests.reminders,active:true}}}));
+      lines.push("NEW AGENDA PINNED: 'The Remind-Me Agenda' — seven cryptic notes are out there. Collate them.");
+    }
+    if(g.bag.volcanobag&&g.quests.eagleq.active&&!g.quests.eagleq.done){
+      setG(p=>{let g2={...p,bag:addItem(p.bag,"volcanobag",-1)};
+        g2.quests={...g2.quests,eagleq:{...g2.quests.eagleq,done:true}};
+        g2.flags={...g2.flags,eagleq:true}; g2.coins+=200; push("+200 coins"); push("Quest complete: Eagle Delivery!");
+        return checkAchv(g2,push);});
+      lines.push("You pin the Volcano Bag beneath the minutes. Somewhere over the Plaque, wings answer. (Visit Caesar Plaque at NIGHT.)");
+    }
+    openDialog("Notice Board",lines);
+  }
+  function questTalk(n,g){
+    const q=n.quest;
+    if(q==="botbot"){
+      if(g.quests.botbot.done){openDialog(n.name,["Roast's nearly done. Kettle says the grinder suits you."]);return;}
+      if(!g.quests.botbot.active){setG(p=>({...p,quests:{...p.quests,botbot:{...p.quests.botbot,active:true}},bag:addItem(p.bag,"qbotbot",1)}));
+        openDialog(n.name,n.lines.concat(["(Kettle's Bot Bot added to bag — find Kettle in Deal.)"]));}
+      else openDialog(n.name,["He's out on the round in Deal somewhere. Bot bot's in your bag."]);
+      return;}
+    if(q==="honesty"){
+      if(g.flags.honest){openDialog(n.name,["The box sits, satisfied. You are the one man who paid."]);return;}
+      if(g.coins>=50)openDialog(n.name,n.lines,{choice:{label:"Put in 50 coins",fn:()=>{
+        setG(p=>{let g2={...p,coins:p.coins-50,flags:{...p.flags,honest:true},bag:addItem(p.bag,"ptin",1)};
+          g2.quests={...g2.quests,honesty:{...g2.quests.honesty,active:true,done:true}};
+          push("Got Primo Tin!"); push("Quest complete: The Honesty Box!"); sfx.chip(); return checkAchv(g2,push);});
+        closeUi("dialog");}}});
+      else openDialog(n.name,n.lines.concat(["(You need 50 coins to do the right thing.)"]));
+      return;}
+    if(q==="seveniron"){
+      if(!g.quests.seveniron.active&&!g.quests.seveniron.done)setG(p=>({...p,quests:{...p.quests,seveniron:{...p.quests.seveniron,active:true}}}));
+      openDialog(n.name,n.lines.concat(g.quests.seveniron.done?["(You already found it. He owes you a caddy round.)"]:["(Quest started: The Lost 7-Iron.)"]));return;}
+    if(q==="lotto"){
+      if(g.coins>=22)openDialog(n.name,n.lines,{choice:{label:"Buy ticket (22c)",fn:()=>{
+        setG(p=>{let g2={...p,coins:p.coins-22,bag:addItem(p.bag,"lotto",1)};
+          const r=questTick(g2,"item","lotto"); r.msgs.forEach(push); sfx.coin(); return checkAchv(r.g,push);});}}});
+      else openDialog(n.name,["Tickets are 22 coins. Which, again, is absurd."]);
+      return;}
+    if(q==="telescope"){openDialog(n.name,n.lines);return;}
+    if(q==="seo"){
+      if(g.quests.seo.done){openDialog(n.name,["Database normalised. Beautiful joins. You're a natural foreign key."]);return;}
+      if(!g.quests.seo.active)setG(p=>({...p,quests:{...p.quests,seo:{...p.quests.seo,active:true}}}));
+      openDialog(n.name,n.lines.concat(["Progress: "+(g.quests.seo.c||0)+"/4 trainers."]));return;}
+    openDialog(n.name,n.lines||["..."]);
+  }
+  function legendTalk(n,g){
+    const key=n.legend==="andromedamon"?"andromeda":n.legend==="greenjacket"?"jacket":n.legend;
+    if(g.flags["boss_"+key]){openDialog(n.name,["The air here is calm now. Something remembers you fondly."]);return;}
+    if(n.req==="eagleq"&&!g.flags.eagleq){openDialog(n.name,["A plaque. Julius Caesar landed near here, 55 BC. Nothing circles overhead. Yet."]);return;}
+    if(n.req==="telescopeq"&&!g.bag.telescopeq){openDialog(n.name,["Without The Telescope this is just very nice squinting."]);return;}
+    if(n.req==="golf3under"&&!g.flags.golf3under){openDialog(n.name,["The Jacket does not stir for scores over par. Go 3-under at Stonelees."]);return;}
+    if(n.hours&&!n.hours.includes(g.phase)){openDialog(n.name,["Nothing now. Come back at night."]);return;}
+    openDialog(n.name,n.lines,{choice:{label:"Face it",fn:()=>{closeUi("dialog");
+      startBattle({kind:"legend",mon:mkMon(n.legend,n.lvl),legendKey:key});}}});
+  }
+  function championTalk(g){
+    if(g.flags.champion){
+      if(!g.flags["boss_volcano"])openDialog("THE VOLCANO",["It respects you now. It will allow the tin. Once."],
+        {choice:{label:"Challenge again",fn:()=>{closeUi("dialog");startBattle({kind:"legend",mon:mkMon("volcano",52),legendKey:"volcano"});}}});
+      else openDialog("THE VOLCANO",["Champion and keeper. The bag fills lazily, contented. #doyouwantit"]);
+      return;}
+    if(g.chips.length<8){openDialog("THE VOLCANO",["The plinth hums. Eight chips or nothing. You hold "+g.chips.length+"."]);return;}
+    const stage=g.mastersStage||0;
+    const seq=["First, the gauntlet: "+RIVAL_BASE[g.rivals[0]].name+" awaits.","Next: "+RIVAL_BASE[g.rivals[1]].name+". The Council watches.","THE VOLCANO descends from its plinth. Touch and love. Love and touch."];
+    openDialog("The Masters",[seq[stage],"(Your party will be fully healed.)"],{choice:{label:"Begin",fn:()=>{
+      closeUi("dialog"); healParty(true);
+      if(stage<2){const rid=g.rivals[stage],base=RIVAL_BASE[rid];
+        startBattle({kind:"rival",trainer:{id:"masters_"+rid,name:base.name,glyph:base.glyph,team:mastersTeam(rid),
+          ai:3,reward:500,intro:base.intro,lose:base.lose,win:base.win},masters:true});}
+      else startBattle({kind:"champion",mon:mkMon("volcano",48)});}}});
+  }
+  function rivalTalk(n,g){
+    const rid=n.rival, base=RIVAL_BASE[rid];
+    /* quest hooks */
+    if(rid==="kettle"){
+      if(g.quests.botbot.active&&!g.quests.botbot.done&&g.bag.qbotbot){
+        setG(p=>{let g2={...p,bag:addItem(p.bag,"qbotbot",-1)};
+          g2.quests={...g2.quests,botbot:{...g2.quests.botbot,done:true},lotto:{...g2.quests.lotto,active:true}};
+          g2.coins+=120; g2.bag=addItem(g2.bag,"grinder",1);
+          push("+120 coins"); push("Got Grinder!"); push("Quest complete: The Bot Bot Run!"); sfx.chip();
+          return checkAchv(g2,push);});
+        openDialog("Kettle",["My bot bot! Legend. Absolute legend. xx","Here — a grinder for your troubles.","Actually, while you're about: grab me 4 lottery tickets from Mill Hill Tesco? Don't tell me the numbers yet. 29 is key."]);
+        return;}
+      if(g.quests.lotto.active&&!g.quests.lotto.done&&(g.bag.lotto||0)>=4){
+        setG(p=>{let g2={...p,bag:addItem(p.bag,"lotto",-4)};
+          g2.quests={...g2.quests,lotto:{...g2.quests.lotto,done:true}};
+          g2.coins+=300; push("+300 coins"); push("Quest complete: The Lottery Run!"); sfx.chip();
+          return checkAchv(g2,push);});
+        openDialog("Kettle",["Four tickets! Beautiful. Didn't even look at the numbers, don't ruin it.","Here's your cut regardless. 29 is key, remember. xx"]);
+        return;}
+      if(g.quests.seveniron.done&&!g.flags.irongiven){
+        setG(p=>{let g2={...p,flags:{...p.flags,irongiven:true},bag:addItem(addItem(p.bag,"seveniron",-1),"kingskins",1)};
+          g2.coins+=150; push("+150 coins"); push("Got Kingskins!"); return checkAchv(g2,push);});
+        openDialog("Kettle",["The 7-iron! Knew I hadn't lost it. Thanks man, nice one. xx"]); return;}
+      if(g.chips.length>=6&&!g.flags.telescopegiven){
+        setG(p=>{let g2={...p,flags:{...p.flags,telescopegiven:true},bag:addItem(p.bag,"telescopeq",1)};
+          g2.quests={...g2.quests,telescope:{...g2.quests.telescope,active:true}}; return g2;});
+        push("Got The Telescope!");
+        openDialog("Kettle",["Six chips? Right — take The Telescope. We'll take our time going through how it works.","Sandown Castle. Night. Clear skies. You'll know it when you see it. xx"]); return;}
+    }
+    if(rid==="oli"&&g.chips.length>=4&&!g.quests.eagleq.active&&!g.quests.eagleq.done){
+      setG(p=>({...p,quests:{...p.quests,eagleq:{...p.quests.eagleq,active:true}},bag:addItem(p.bag,"volcanobag",1)}));
+      openDialog("Oli",["Biggest drop yet. Take this Volcano Bag to the Annexe notice board.","Then listen at the Plaque after dark. The Eagle always lands. Touch and love."]); return;}
+    /* battle gating: re-battle when chips grew */
+    const tier=g.rivalTier[rid];
+    if(g.chips.length>tier){
+      openDialog(base.name,[pick(base.intro)],{choice:{label:"Battle!",fn:()=>{closeUi("dialog");
+        startBattle({kind:"rival",trainer:{id:"rv_"+rid,name:base.name,glyph:base.glyph,team:rivalTeam(rid,g.chips.length),
+          ai:g.chips.length>=5?3:2,reward:80+g.chips.length*40,intro:base.intro,lose:base.lose,win:base.win},rivalId:rid});}}});
+    } else openDialog(base.name,[pick([base.win,"Go win another chip, then we'll go again.","Wys? "+PHASES[g.phase].toLowerCase()+" suits you. xx"])]);
+  }
+  function trainerTalk(n,g){
+    const tr=TRAINERS[n.trainer];
+    if(g.beaten[tr.id]){
+      const rd=g.rematchAt[tr.id]||0;
+      if(tr.rematch&&g.steps>=rd){
+        openDialog(tr.name,["Rematch? I've been training. Genuinely this time."],{choice:{label:"Rematch!",fn:()=>{closeUi("dialog");
+          startBattle({kind:"trainer",trainer:{...tr,team:tr.rematch,reward:Math.floor(tr.reward*1.6)},rematch:true});}}});
+      } else openDialog(tr.name,[tr.lose]);
+      return;}
+    openDialog(tr.name,[tr.intro],{choice:{label:"Battle!",fn:()=>{closeUi("dialog");startBattle({kind:"trainer",trainer:tr});}}});
+  }
+  function healParty(silent){ setG(p=>({...p,party:p.party.map(m=>({...m,hp:m.stats.hp,status:null,
+    moves:m.moves.map(mv=>({...mv,pp:MOVES[mv.id].pp}))}))})); if(!silent){sfx.heal();push("Party fully restored.");} }
+
+  function move(dx,dy){
+    const g=GRef.current; if(!g||g.screen!=="world"||busyRef.current||uiRef.current.any||bt.current)return;
+    const dir=dx===1?"E":dx===-1?"W":dy===1?"S":"N";
+    const nx=g.x+dx,ny=g.y+dy, M=MAPS[g.map];
+    if(g.dir!==dir){setG(p=>({...p,dir}));}
+    const n=npcAt(g.map,nx,ny);
+    if(n){setG(p=>({...p,dir}));handleNpc(n);return;}
+    /* warp? */
+    const wp=M.warps.find(w=>w.x===nx&&w.y===ny);
+    if(wp){
+      if(wp.req){const need=parseInt(wp.req.replace("chips",""));
+        if(wp.req.startsWith("chips")&&g.chips.length<need){openDialog("Blocked",[wp.reqMsg]);return;}}
+      doWarp(wp);return;}
+    const t=tileAt(g.map,nx,ny);
+    if(SOLID.has(t)){setG(p=>({...p,dir}));return;}
+    busyRef.current=true;
+    setG(p=>{
+      let g2={...p,x:nx,y:ny,dir,steps:p.steps+1,repel:Math.max(0,p.repel-1)};
+      /* time */
+      if(g2.steps%STEPS_PER_PHASE===0){ g2.phase=(g2.phase+1)%4;
+        if(g2.phase===0){g2.day++;push("A new day. Swarm: "+DEX[swarmOf(g2.day)].name);}
+        g2.weatherOw=rollWeather(g2.map,g2.phase);
+        push(PHASES[g2.phase]+(g2.weatherOw!=="clear"?" — "+({mist:"sea mist",rain:"drizzle",heat:"heatwave"})[g2.weatherOw]:""));}
+      /* pickups */
+      const ck="c:"+g2.map+":"+nx+","+ny;
+      if(t==="c"&&!g2.picked[ck]){g2.picked={...g2.picked,[ck]:1};g2.coins+=8;sfx.coin();push("+8 coins");}
+      const hid=M.hidden.find(h=>h.x===nx&&h.y===ny), hk="h:"+g2.map+":"+nx+","+ny;
+      if(hid&&!g2.picked[hk]){g2.picked={...g2.picked,[hk]:1};g2.bag=addItem(g2.bag,hid.item,hid.n);sfx.coin();
+        push("Found "+(hid.n>1?hid.n+"x ":"")+ITEMS[hid.item].name+"!");}
+      const nsp=NOTESPOTS.find(o=>o.map===g2.map&&o.x===nx&&o.y===ny), nk="n:"+g2.map+":"+nx+","+ny;
+      if(nsp&&!g2.picked[nk]){g2.picked={...g2.picked,[nk]:1};g2.bag=addItem(g2.bag,"note",1);sfx.caught();
+        push("📝 "+nsp.text); const r=questTick(g2,"item","note"); r.msgs.forEach(push); g2=r.g;}
+      return checkAchv(g2,push);});
+    setTimeout(()=>{busyRef.current=false;
+      /* encounter after state applied */
+      const g2=GRef.current, t2=tileAt(g2.map,g2.x,g2.y), M2=MAPS[g2.map];
+      const table=M2.enc&&(g2.phase===3&&M2.enc.night?M2.enc.night:(M2.enc.grass||M2.enc.cave));
+      const rate=t2==="G"?0.2:t2==="g"?0.12:(M2.dark&&t2===".")?0.09:0;
+      if(table&&rate>0&&g2.repel<=0&&R()<rate){
+        let sp; if(R()<0.12)sp=swarmOf(g2.day);
+        else{const tot=table.reduce((a,[,w])=>a+w,0);let r=R()*tot;
+          for(const [s,w] of table){r-=w;if(r<=0){sp=s;break;}} sp=sp||table[0][0];}
+        const lvl=ri(M2.enc.lvl[0],M2.enc.lvl[1]);
+        startBattle({kind:"wild",mon:mkMon(sp,lvl)});}
+    },135);
+  }
+  function doWarp(wp){
+    busyRef.current=true; sfx.sel();
+    setG(p=>{let g2={...p,map:wp.to,x:wp.tx,y:wp.ty,weatherOw:rollWeather(wp.to,p.phase),visited:{...p.visited,[wp.to]:true}};
+      saveGame(g2); return g2;});
+    push(MAPS[wp.to].name);
+    setTimeout(()=>busyRef.current=false,220);
+  }
+
+  /* ---------- BATTLE RUNNER ---------- */
+  function startBattle(cfg){
+    const g=GRef.current;
+    const myIdx=g.party.findIndex(m=>m.hp>0);
+    if(myIdx<0){push("Your whole party is out cold. Find a heal.");return;}
+    sfx.bstart();
+    const foeMon=cfg.kind==="trainer"||cfg.kind==="rival"?mkMon(cfg.trainer.team[0][0],cfg.trainer.team[0][1]):cfg.mon;
+    const b={...cfg,myIdx,foeTi:0,weather:g.weatherOw,
+      my:freshSide(deep(g.party[myIdx])),foe:freshSide(foeMon),
+      foeNew:!(g.dex[foeMon.sp]&&g.dex[foeMon.sp].seen), /* captured BEFORE we mark it seen below */
+      log:["A "+(cfg.kind==="wild"?"wild ":"")+(cfg.trainer?cfg.trainer.name+" sends out ":"")+DEX[foeMon.sp].name+(cfg.kind==="wild"||cfg.kind==="legend"||cfg.kind==="champion"?" appeared!":"!")],
+      menu:"none",busy:true,over:false,swirl:true,animMy:"",animFoe:""};
+    if(cfg.trainer){
+      b.foeTeam=cfg.trainer.team.map(([sp,lvl],i)=>i===0?b.foe:freshSide(mkMon(sp,lvl)));
+    }
+    if(cfg.trainer)b.log.unshift(cfg.trainer.name+": "+pick(cfg.trainer.intro?[].concat(cfg.trainer.intro):["Let's go."]));
+    bt.current=b;
+    setG(p=>({...p,dex:{...p.dex,[foeMon.sp]:{seen:true,caught:(p.dex[foeMon.sp]||{}).caught||false}}}));
+    rr();
+    (async()=>{await sleep(700); b.swirl=false;
+      if(b.weather!=="clear")b.log.push(({mist:"Sea mist hangs over the battle.",rain:"Deal drizzle sets in.",heat:"Too much heat. Been building all week."})[b.weather]);
+      b.busy=false;b.menu="main";rr();})();
+  }
+  function endBattle(result){
+    const b=bt.current; b.over=true; b.result=result; b.menu="none"; rr();
+  }
+  function applyMyMon(){ // write battle mon back to party; returns the fresh array synchronously
+    // (setG's own updater always sees fresh state, but GRef.current does NOT update until
+    // the next render — callers that need the up-to-date party immediately must use this return value)
+    const b=bt.current;
+    const party=GRef.current.party.map((m,i)=>i===b.myIdx?{...b.my.mon}:m);
+    setG(p=>({...p,party}));
+    return party;
+  }
+  async function grantXp(){
+    const b=bt.current, g=GRef.current;
+    const gain=xpGain(b.foe.mon,!!b.trainer);
+    b.log.push(DEX[b.my.mon.sp].name+" gained "+gain+" XP.");rr();await sleep(500);
+    let m=b.my.mon; m.xp+=gain;
+    while(m.xp>=xpFor(m.lvl+1)&&m.lvl<60){
+      m.lvl++; recalcStats(m); sfx.lvl();
+      b.animMy="lvlflash"; b.log.push(DEX[m.sp].name+" grew to Lv."+m.lvl+"!"); rr();
+      await sleep(600); b.animMy="";
+      const news=LEARN[m.sp].filter(([l])=>l===m.lvl).map(([,mv])=>mv);
+      for(const mv of news){ if(m.moves.some(x=>x.id===mv))continue;
+        if(m.moves.length<4){m.moves.push({id:mv,pp:MOVES[mv].pp});b.log.push("Learned "+MOVES[mv].name+"!");}
+        else{const old=m.moves.shift();m.moves.push({id:mv,pp:MOVES[mv].pp});
+          b.log.push("Forgot "+MOVES[old.id].name+"... learned "+MOVES[mv].name+"!");}
+        rr(); await sleep(500);}
+    }
+    applyMyMon();
+    /* XP Share (real Pokemon rule): rest of the party — alive, not the active battler — gets a reduced share */
+    const benchGain=Math.max(1,Math.round(gain*0.5));
+    const leveled=[];
+    const bench=GRef.current.party.map((pm,i)=>{
+      if(i===b.myIdx||pm.hp<=0)return pm;
+      const bm={...pm}; bm.xp+=benchGain;
+      while(bm.xp>=xpFor(bm.lvl+1)&&bm.lvl<60){
+        bm.lvl++; recalcStats(bm);
+        const news2=LEARN[bm.sp].filter(([l])=>l===bm.lvl).map(([,mv])=>mv);
+        news2.forEach(mv=>{ if(bm.moves.some(x=>x.id===mv))return;
+          if(bm.moves.length<4)bm.moves.push({id:mv,pp:MOVES[mv].pp});
+          else{bm.moves.shift();bm.moves.push({id:mv,pp:MOVES[mv].pp});} });
+        leveled.push(DEX[bm.sp].name+" Lv."+bm.lvl);
+      }
+      return bm;
+    });
+    setG(p=>({...p,party:p.party.map((pm,i)=>i===b.myIdx?pm:bench[i])}));
+    if(leveled.length){ b.log.push("Bench XP: "+leveled.join(", ")+"!"); rr(); await sleep(400); }
+  }
+  async function doMoveAct(att,def,slot,isMy){
+    const b=bt.current, mv=MOVES[slot.id];
+    const who=DEX[att.mon.sp].name;
+    /* status gates */
+    if(att.mon.status==="DAZ"){
+      att.vol.daz=(att.vol.daz||ri(1,3))-1;
+      if(att.vol.daz>0){b.log.push(who+" is fast asleep...");rr();await sleep(550);return;}
+      att.mon.status=null;b.log.push(who+" woke up!");rr();await sleep(450);}
+    if(att.mon.status==="CLK"&&R()<0.25){b.log.push(who+" is couch-locked and can't move!");rr();await sleep(550);return;}
+    if(att.vol.flinch){att.vol.flinch=0;b.log.push(who+" flinched!");rr();await sleep(500);return;}
+    slot.pp=Math.max(0,slot.pp-1);
+    b.log.push(who+" used "+mv.name+"!");rr();await sleep(420);
+    if(def.vol.prot&&mv.cat!=="T"){def.vol.prot=0;b.log.push("But "+DEX[def.mon.sp].name+" protected itself!");rr();await sleep(500);return;}
+    if(!accCheck(att,def,mv)){b.log.push("It missed!");rr();await sleep(450);return;}
+    if(mv.cat==="T"){
+      const fx=mv.fx;
+      if(fx.weather){b.weather=fx.weather==="clear"?"clear":fx.weather;
+        b.log.push(fx.weather==="clear"?"The skies clear on command.":"The weather shifts!");}
+      if(fx.heal){const h=Math.round(att.mon.stats.hp*fx.heal);att.mon.hp=clamp(att.mon.hp+h,0,att.mon.stats.hp);
+        sfx.heal();b.log.push(who+" recovered "+h+" HP!");}
+      if(fx.cureSelf&&att.mon.status){att.mon.status=null;b.log.push(who+" shook off its condition!");}
+      if(fx.buff){Object.entries(fx.buff).forEach(([k,v])=>{if(k==="self"||k==="onKO")return;
+        att.stg[k]=clamp(att.stg[k]+v,-6,6);});b.log.push(who+"'s stats rose!");}
+      if(fx.deb){Object.entries(fx.deb).forEach(([k,v])=>{def.stg[k]=clamp(def.stg[k]+v,-6,6);});
+        b.log.push(DEX[def.mon.sp].name+"'s stats fell!");}
+      if(fx.st&&!def.mon.status&&R()*100<fx.st.ch){
+        if(fx.st.self)att.mon.status=fx.st.id; else def.mon.status=fx.st.id;
+        b.log.push(DEX[(fx.st.self?att:def).mon.sp].name+" is "+STATUS[fx.st.id].name.toLowerCase()+"!");}
+      if(fx.prot){att.vol.prot=1;b.log.push(who+" braced itself!");}
+      if(fx.leech){def.vol.leech=1;b.log.push(DEX[def.mon.sp].name+" was seeded by roots!");}
+      rr();await sleep(550);return;}
+    /* damaging */
+    const hits=mv.fx.hits?ri(mv.fx.hits[0],mv.fx.hits[1]):1;
+    let total=0,lastRes=null;
+    for(let h=0;h<hits;h++){
+      if(def.mon.hp<=0)break;
+      const res=calcDamage(att,def,mv,b.weather);lastRes=res;
+      /* endure item */
+      const held=heldOf(def.mon);
+      let dmg=res.dmg;
+      if(held&&held.endure&&dmg>=def.mon.hp&&R()<held.endure){dmg=def.mon.hp-1;b.log.push(DEX[def.mon.sp].name+" gritted through with Focus Grit!");}
+      def.mon.hp=clamp(def.mon.hp-dmg,0,def.mon.stats.hp);total+=dmg;
+      if(isMy){b.animFoe="hitflash";}else{b.animMy="hitflash";}
+      b.shake=(res.crit||res.mult>=2)?"shakeBig":"shake"; /* bigger shake on crit / super-effective */
+      (res.crit?sfx.crit:sfx.hit)();
+      rr();await sleep(300);b.animMy="";b.animFoe="";b.shake="";rr();
+    }
+    if(hits>1)b.log.push("Hit "+hits+" times!");
+    if(lastRes){
+      if(lastRes.crit)b.log.push("A critical hit!");
+      if(lastRes.mult>=2)b.log.push("It's super effective!");
+      else if(lastRes.mult>0&&lastRes.mult<1)b.log.push("Not very effective...");
+    }
+    if(mv.fx.drain&&total>0){const h=Math.max(1,Math.round(total*mv.fx.drain));
+      att.mon.hp=clamp(att.mon.hp+h,0,att.mon.stats.hp);b.log.push(who+" drained "+h+" HP!");}
+    if(mv.fx.recoil&&total>0){const rd=Math.max(1,Math.round(total*mv.fx.recoil));
+      att.mon.hp=clamp(att.mon.hp-rd,0,att.mon.stats.hp);b.log.push(who+" was hurt by recoil!");}
+    if(mv.fx.st&&!def.mon.status&&def.mon.hp>0&&R()*100<mv.fx.st.ch){
+      def.mon.status=mv.fx.st.id;b.log.push(DEX[def.mon.sp].name+" is "+STATUS[mv.fx.st.id].name.toLowerCase()+"!");}
+    if(mv.fx.deb&&def.mon.hp>0&&R()*100<(mv.fx.deb.ch||100)&&mv.fx.deb.ch!==undefined){
+      Object.entries(mv.fx.deb).forEach(([k,v])=>{if(k==="ch")return;def.stg[k]=clamp(def.stg[k]+v,-6,6);});
+      b.log.push(DEX[def.mon.sp].name+"'s stats fell!");}
+    if(mv.fx.flinch&&R()*100<mv.fx.flinch)def.vol.flinch=1;
+    if(mv.fx.buff&&mv.fx.buff.onKO&&def.mon.hp<=0){att.stg.atk=clamp(att.stg.atk+1,-6,6);b.log.push(who+" is fired up! #doyouwantit");}
+    rr();await sleep(520);
+  }
+  async function endOfTurn(){
+    const b=bt.current;
+    for(const [side,other,isMy] of [[b.my,b.foe,true],[b.foe,b.my,false]]){
+      const m=side.mon; if(m.hp<=0)continue;
+      const nm=DEX[m.sp].name;
+      if(m.status==="GRN"){const d=Math.max(1,Math.floor(m.stats.hp/8));m.hp=clamp(m.hp-d,0,m.stats.hp);
+        b.log.push(nm+" is greening out! -"+d);rr();await sleep(400);}
+      if(m.status==="MUN"){const d=Math.max(1,Math.floor(m.stats.hp/16));m.hp=clamp(m.hp-d,0,m.stats.hp);
+        b.log.push(nm+" snacks on itself... -"+d);rr();await sleep(400);}
+      if(side.vol.leech&&m.hp>0){const d=Math.max(1,Math.floor(m.stats.hp/8));m.hp=clamp(m.hp-d,0,m.stats.hp);
+        other.mon.hp=clamp(other.mon.hp+d,0,other.mon.stats.hp);
+        b.log.push("Roots drain "+nm+"!");rr();await sleep(400);}
+      const held=heldOf(m);
+      if(held&&held.regen&&m.hp>0&&m.hp<m.stats.hp){const h=Math.max(1,Math.floor(m.stats.hp*held.regen));
+        m.hp=clamp(m.hp+h,0,m.stats.hp);b.log.push(nm+" nibbled its Leftover Munchies.");rr();await sleep(350);}
+      if(held&&held.pinch&&!side.pinchUsed&&m.hp>0&&m.hp<m.stats.hp*0.3){side.pinchUsed=true;
+        const h=Math.round(m.stats.hp*held.pinch);m.hp=clamp(m.hp+h,0,m.stats.hp);
+        b.log.push(nm+"'s Bot Bot kicked in! +"+h);sfx.heal();rr();await sleep(400);}
+    }
+  }
+  async function checkFaints(){
+    const b=bt.current, g=GRef.current;
+    /* self-faint is checked FIRST: a simultaneous recoil/self-KO must never be
+       reported as a win just because the foe also fainted in the same action */
+    if(b.my.mon.hp<=0){
+      b.animMy="faintanim";sfx.faint();b.log.push(DEX[b.my.mon.sp].name+" fainted!");rr();await sleep(700);b.animMy="";
+      const party=applyMyMon();
+      const alive=party.findIndex(m=>m.hp>0);
+      if(alive>=0){b.needSwitch=true;return "switch";}
+      return "loss";}
+    if(b.foe.mon.hp<=0){
+      b.animFoe="faintanim";sfx.faint();b.log.push(DEX[b.foe.mon.sp].name+" fainted!");rr();await sleep(700);b.animFoe="";
+      setG(p=>({...p,stats:{...p.stats,wins:(p.stats.wins||0)+1}}));
+      await grantXp();
+      if(b.trainer&&b.foeTeam){
+        const nextI=b.foeTeam.findIndex((s,i)=>i!==b.foeTi&&s.mon.hp>0);
+        if(nextI>=0){
+          b.foeTi=nextI; b.foe=b.foeTeam[nextI];
+          setG(p=>({...p,dex:{...p.dex,[b.foe.mon.sp]:{seen:true,caught:(p.dex[b.foe.mon.sp]||{}).caught||false}}}));
+          b.log.push(b.trainer.name+" sends out "+DEX[b.foe.mon.sp].name+"!");rr();await sleep(600);
+          return "next";}}
+      return "win";}
+    return null;
+  }
+  async function playerTurn(action){
+    const b=bt.current; if(b.busy||b.over)return;
+    b.busy=true;b.menu="none";rr();
+    let myAct=action;
+    /* foe decides: a switch (if warranted) always takes priority over a move, same as real Pokemon */
+    const swi=aiPickSwitch(b,b.my);
+    let foeAct;
+    if(swi!=null){
+      b.foeTi=swi; b.foe=b.foeTeam[swi];
+      b.log.push((b.trainer?b.trainer.name:"The foe")+" switches to "+DEX[b.foe.mon.sp].name+"!");rr();await sleep(600);
+      foeAct={type:"none"};
+    } else {
+      foeAct=aiPick(b.foe,b.my,b.weather,b.ai||(b.trainer&&b.trainer.ai)||1);
+    }
+    /* order */
+    const order=[];
+    if(myAct.type==="move"&&foeAct.type==="move"){
+      const pm=MOVES[myAct.mv.id].pri,pf=MOVES[foeAct.mv.id].pri;
+      const ms=effStat(b.my,"spe"),fs=effStat(b.foe,"spe");
+      const meFirst=pm>pf||(pm===pf&&(ms>fs||(ms===fs&&R()<.5)));
+      if(pm!==pf) b.log.push((meFirst?DEX[b.my.mon.sp].name:DEX[b.foe.mon.sp].name)+" moves first (priority)!");
+      else b.log.push((meFirst?DEX[b.my.mon.sp].name:DEX[b.foe.mon.sp].name)+" is faster — moves first!");
+      rr();await sleep(420);
+      order.push(meFirst?["my",myAct]:["foe",foeAct],meFirst?["foe",foeAct]:["my",myAct]);
+    } else { if(myAct.type!=="none")order.push(["my",myAct]); order.push(["foe",foeAct]); }
+    for(const [who,act] of order){
+      if(b.over)break;
+      const att=who==="my"?b.my:b.foe, def=who==="my"?b.foe:b.my;
+      if(att.mon.hp<=0)continue;
+      if(act.type==="move")await doMoveAct(att,def,act.mv,who==="my");
+      else if(act.type==="struggle"){b.log.push(DEX[att.mon.sp].name+" has no moves left! It flails!");
+        const res=calcDamage(att,def,{cat:"P",pow:40,type:"Dust",fx:{},acc:100},b.weather);
+        def.mon.hp=clamp(def.mon.hp-res.dmg,0,def.mon.stats.hp);
+        att.mon.hp=clamp(att.mon.hp-Math.round(res.dmg*.25),0,att.mon.stats.hp);rr();await sleep(500);}
+      const f=await checkFaints();
+      if(f==="win"){b.busy=false;await winBattle();return;}
+      if(f==="loss"){b.busy=false;await loseBattle();return;}
+      if(f==="switch"){b.busy=false;rr();return;}
+      if(f==="next")break;
+    }
+    if(!b.over){await endOfTurn();
+      const f=await checkFaints();
+      if(f==="win"){await winBattle();return;}
+      if(f==="loss"){await loseBattle();return;}
+      if(f==="switch"){b.busy=false;rr();return;}
+      b.busy=false;b.menu="main";rr();}
+  }
+  async function winBattle(){
+    const b=bt.current;
+    if(b.trainer){
+      let reward=b.trainer.reward;
+      const g=GRef.current;
+      if(g.party.some(m=>m.item==="clubcarditem"))reward=Math.floor(reward*1.5);
+      b.log.push(b.trainer.name+": "+(b.trainer.lose||"Good game."));
+      b.log.push("Won "+reward+" coins!");sfx.coin();rr();
+      setG(p=>{let g2={...p,coins:p.coins+reward,beaten:{...p.beaten,[b.trainer.id]:true},
+        rematchAt:{...p.rematchAt,[b.trainer.id]:p.steps+700}};
+        if(b.trainer.chip&&!g2.chips.includes(b.trainer.chip)){g2.chips=[...g2.chips,b.trainer.chip];
+          push("🪙 TPT CHIP "+b.trainer.chip+" acquired!");sfx.chip();}
+        if(b.rivalId)g2.rivalTier={...g2.rivalTier,[b.rivalId]:g2.chips.length};
+        if(b.masters)g2.mastersStage=(g2.mastersStage||0)+1;
+        const r=questTick(g2,"defeatTrainer",b.trainer.id);r.msgs.forEach(push);
+        return checkAchv(r.g,push);});
+    } else if(b.kind==="legend"){
+      setG(p=>checkAchv({...p,flags:{...p.flags,["boss_"+b.legendKey]:true}},push));
+      b.log.push("The presence recedes, impressed.");
+    } else if(b.kind==="champion"){
+      b.log.push("THE VOLCANO powers down, satisfied.","You are the LBT MASTERS CHAMPION!");
+      setG(p=>checkAchv({...p,flags:{...p.flags,champion:true}},push));
+      b.champion=true;
+    } else { const coins=ri(4,10)+b.foe.mon.lvl; b.log.push("Found "+coins+" coins in the grass!");
+      setG(p=>({...p,coins:p.coins+coins}));
+      if(R()<0.3){const mat=pick(["dustsample","papers","seaglass","flint"]);
+        setG(p=>({...p,bag:addItem(p.bag,mat,1)}));b.log.push("Picked up 1 "+ITEMS[mat].name+".");}}
+    rr();endBattle("win");
+  }
+  async function loseBattle(){
+    const b=bt.current;
+    b.log.push("You're out of options...","You scrambled back to the Annexe.");rr();
+    endBattle("loss");
+  }
+  async function tryRun(){
+    const b=bt.current; if(b.busy||b.trainer)return;
+    b.busy=true;b.menu="none";rr();
+    const ok=R()<clamp(0.5+ (effStat(b.my,"spe")-effStat(b.foe,"spe"))/200,0.25,0.95);
+    b.log.push(ok?"Got away safely!":"Couldn't escape!");rr();await sleep(500);
+    if(ok){endBattle("ran");return;}
+    b.busy=false;
+    await playerTurn({type:"none"});
+  }
+  async function throwTin(ballId){
+    const b=bt.current, g=GRef.current;
+    if(b.busy)return;
+    if(b.trainer){b.log.push("Can't tin another trainer's strain! Etiquette.");rr();return;}
+    if(b.kind==="champion"){b.log.push("The Volcano cannot be caught. It must be subdued.");rr();return;}
+    b.busy=true;b.menu="none";
+    setG(p=>({...p,bag:addItem(p.bag,ballId,-1)}));
+    b.log.push("You lob a "+ITEMS[ballId].name+"...");b.tinAnim=true;rr();
+    const roll=catchRoll(b.foe.mon,ITEMS[ballId].ball);
+    for(let i=0;i<roll.shakes;i++){await sleep(600);sfx.catch1();b.log.push("· shake ·");rr();}
+    await sleep(500);b.tinAnim=false;
+    if(roll.caught){
+      sfx.caught();b.log.push("Gotcha! "+DEX[b.foe.mon.sp].name+" was caught!");
+      const mon=deep(b.foe.mon);mon.status=null;
+      setG(p=>{let g2={...p,dex:{...p.dex,[mon.sp]:{seen:true,caught:true}},
+        stats:{...p.stats,catches:(p.stats.catches||0)+1}};
+        if(g2.party.length<6)g2.party=[...g2.party,mon];
+        else{g2.box=[...g2.box,mon];b.log.push("Sent to The Stash at the Annexe.");}
+        if(b.legendKey)g2.flags={...g2.flags,["boss_"+b.legendKey]:true};
+        return checkAchv(g2,push);});
+      rr();await sleep(600);endBattle("caught");
+    } else { b.log.push("It broke free!");rr();await sleep(400);b.busy=false;await playerTurn({type:"none"}); }
+  }
+  async function useBattleBoost(id){
+    const b=bt.current; if(b.busy)return;
+    b.busy=true;b.menu="none";closeUi("bbag");
+    setG(p=>({...p,bag:addItem(p.bag,id,-1)}));
+    const buff=ITEMS[id].battleBuff;
+    Object.entries(buff).forEach(([k,v])=>{b.my.stg[k]=clamp((b.my.stg[k]||0)+v,-6,6);});
+    b.log.push(DEX[b.my.mon.sp].name+" used "+ITEMS[id].name+"! Stats rose!");sfx.coin();rr();await sleep(500);
+    b.busy=false;
+    await playerTurn({type:"none"});
+  }
+  async function useBattleItem(id){
+    const b=bt.current; if(b.busy)return;
+    const it=ITEMS[id];
+    if(it.ball){closeUi("bbag");await throwTin(id);return;}
+    if(it.battleBuff){await useBattleBoost(id);return;}
+    b.busy=true;b.menu="none";closeUi("bbag");
+    setG(p=>({...p,bag:addItem(p.bag,id,-1)}));
+    const m=b.my.mon;
+    if(it.heal){const h=Math.min(it.heal,m.stats.hp-m.hp);m.hp=clamp(m.hp+it.heal,0,m.stats.hp);
+      sfx.heal();b.log.push(DEX[m.sp].name+" recovered "+h+" HP!");}
+    if(it.cure){if(it.cure==="ALL"||m.status===it.cure){m.status=null;b.log.push(DEX[m.sp].name+" was cured!");}
+      else b.log.push("It had no effect...");}
+    applyMyMon();rr();await sleep(500);
+    b.busy=false;
+    await playerTurn({type:"none"});
+  }
+  async function switchMon(i,free){
+    const b=bt.current, g=GRef.current;
+    if(g.party[i].hp<=0||i===b.myIdx)return;
+    applyMyMon();
+    b.myIdx=i;b.my=freshSide(deep(GRef.current.party[i]));
+    b.needSwitch=false;closeUi("bparty");
+    b.log.push("Go, "+DEX[b.my.mon.sp].name+"!");rr();
+    if(free){b.busy=false;b.menu="main";rr();return;}
+    await sleep(450);
+    b.busy=false;
+    await playerTurn({type:"none"});
+  }
+  function battleDone(){
+    const b=bt.current, g=GRef.current;
+    applyMyMon();
+    const champ=b.champion;
+    bt.current=null;
+    /* evolution check */
+    const evos=[];
+    GRef.current.party.forEach((m,i)=>{const d=DEX[m.sp];
+      if(d.evo&&m.lvl>=d.evo.lvl)evos.push(i);});
+    if(evos.length)setEvoQ(evos);
+    if(b.result==="loss"){
+      setG(p=>{let g2={...p,map:"annexe_int",x:4,y:3,coins:Math.floor(p.coins*.85),visited:{...p.visited,annexe_int:true},
+        party:p.party.map(m=>({...m,hp:m.stats.hp,status:null}))};saveGame(g2);return g2;});
+      push("Patched up at the Annexe. Lost some coins on the way.");
+    } else { setG(p=>{saveGame(p);return p;}); }
+    if(champ)setG(p=>({...p,screen:"victory"}));
+    rr();
+  }
+  function confirmEvo(idx,accept){
+    setEvoQ(q=>q.slice(1));
+    if(!accept)return;
+    sfx.caught();
+    setG(p=>{const party=p.party.map((m,i)=>{
+      if(i!==idx)return m;
+      const d=DEX[m.sp],m2={...m,sp:d.evo.to};recalcStats(m2);
+      push(DEX[m.sp].name+" evolved into "+DEX[d.evo.to].name+"!");
+      return m2;});
+      let g2={...p,party,flags:{...p.flags,evolved:true}};
+      g2.dex={...g2.dex,[party[idx].sp]:{seen:true,caught:true}};
+      return checkAchv(g2,push);});
+  }
+
+  /* ---------- keyboard ---------- */
+  useEffect(()=>{
+    function onKey(e){
+      const k=e.key.toLowerCase(), g=GRef.current;
+      if(!g)return;
+      if(bt.current||uiRef.current.any){ if(k==="enter"||k===" ")e.preventDefault(); return; }
+      if(g.screen!=="world")return;
+      if(["arrowup","w"].includes(k)){e.preventDefault();move(0,-1);}
+      else if(["arrowdown","s"].includes(k)){e.preventDefault();move(0,1);}
+      else if(["arrowleft","a"].includes(k)){e.preventDefault();move(-1,0);}
+      else if(["arrowright","d"].includes(k)){e.preventDefault();move(1,0);}
+      else if(k==="enter"||k===" "){e.preventDefault();interact();}
+      else if(k==="m"){e.preventDefault();setUi(u=>({...u,any:1,rmap:1}));}
+      else if(k==="escape"||k==="x"){e.preventDefault();setUi(u=>({...u,any:1,menu:"party"}));}
+    }
+    window.addEventListener("keydown",onKey);
+    return()=>window.removeEventListener("keydown",onKey);
+  },[]);
+  /* ---------- RENDER ---------- */
+  const B=bt.current;
+  return (
+  <div className="shell">
+    <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10,padding:"0 4px"}}>
+      <div style={{display:"flex",gap:8,alignItems:"center"}}><span className="led"/>
+        <span className="silk" style={{fontSize:11,letterSpacing:1,color:"var(--cream)"}}>DEAL DEX</span></div>
+      <span className="silk" style={{fontSize:7,color:"var(--send)",letterSpacing:1}}>SC · FIELD UNIT v2</span>
+    </div>
+    <div className="lcd">
+      {!G&&<TitleScreen onNew={()=>setG({screen:"select"})} onCont={()=>{const s=loadGame();if(s)setG(s);else push("No save found.");}}/>}
+      {G&&G.screen==="select"&&<SelectScreen onPick={h=>{const g=newGame(h);g.screen="intro";saveGame(g);setG(g);}}/>}
+      {G&&G.screen==="intro"&&<IntroScreen G={G} onStart={()=>setG(p=>{const g2={...p,screen:"world"};saveGame(g2);push("Autosaved. Good luck out there. xx");return g2;})}/>}
+      {G&&G.screen==="world"&&!B&&<World G={G} npcVisible={npcVisible}/>}
+      {B&&<BattleScreen B={B} G={G} onMenu={m=>{B.menu=m;rr();}} onMove={s=>playerTurn({type:"move",mv:s})}
+        onRun={tryRun} onDone={battleDone} openBag={()=>setUi(u=>({...u,bbag:1}))} openParty={()=>setUi(u=>({...u,bparty:1}))}/>}
+      {G&&G.screen==="victory"&&<VictoryScreen G={G} onBack={()=>setG(p=>({...p,screen:"world"}))}/>}
+      {B&&!B.needSwitch&&!G.flags.battletut&&<BattleTutorial onClose={()=>setG(p=>({...p,flags:{...p.flags,battletut:true}}))}/>}
+
+      {/* battle overlays */}
+      {ui.bbag&&B&&<div className="overlay">
+        <b style={{fontSize:18}}>Battle Bag</b>
+        <div className="scroll">
+        {Object.entries(G.bag).filter(([id])=>ITEMS[id].ball||ITEMS[id].heal||ITEMS[id].cure||ITEMS[id].battleBuff).map(([id,n])=>
+          <div key={id} className="menurow"><span>{ITEMS[id].name} ×{n}<div style={{fontSize:13,color:"var(--inkDim)"}}>{ITEMS[id].desc}</div></span>
+            <Btn on={()=>useBattleItem(id)}>Use</Btn></div>)}
+        {!Object.entries(G.bag).some(([id])=>ITEMS[id].ball||ITEMS[id].heal||ITEMS[id].cure||ITEMS[id].battleBuff)&&<p>Nothing useful in here.</p>}
+        </div>
+        <Btn col="var(--stamp)" style={{color:"#fff",width:"100%"}} on={()=>closeUi("bbag")}>Close</Btn></div>}
+      {ui.bparty&&B&&<div className="overlay">
+        <b style={{fontSize:18}}>Switch</b>
+        <div className="scroll">
+        {G.party.map((m,i)=><div key={m.uid} className="menurow" style={{opacity:m.hp<=0?.5:1}}>
+          <span>{DEX[m.sp].name} Lv.{m.lvl} — {m.hp}/{m.stats.hp}{m.status&&<Pill col={STATUS[m.status].col}> {STATUS[m.status].name}</Pill>}</span>
+          <Btn dis={m.hp<=0||i===B.myIdx} on={()=>switchMon(i,!B.needSwitch&&!B.busy?false:B.needSwitch)}>Go</Btn></div>)}
+        </div>
+        {!B.needSwitch&&<Btn col="var(--stamp)" style={{color:"#fff",width:"100%"}} on={()=>closeUi("bparty")}>Close</Btn>}</div>}
+      {B&&B.needSwitch&&!ui.bparty&&<div className="overlay"><b>Choose your next strain!</b>
+        <Btn style={{width:"100%",marginTop:6}} on={()=>setUi(u=>({...u,bparty:1}))}>Open party</Btn></div>}
+
+      {/* world overlays */}
+      {ui.dialog&&<DialogBox d={ui.dialog} onNext={()=>{
+        const d=uiRef.current.dialog;
+        if(d.i<d.lines.length-1)setUi(u=>({...u,dialog:{...d,i:d.i+1}}));
+        else closeUi("dialog");}}/>}
+      {ui.shop&&<ShopBox shop={SHOPS[ui.shop]} G={G} setG={setG} push={push} onClose={()=>closeUi("shop")}/>}
+      {ui.menu&&<MenuBox G={G} setG={setG} push={push} tab={ui.menu} setTab={t=>setUi(u=>({...u,menu:t}))}
+        onClose={()=>closeUi("menu")} healUse={healUseItem} onQuit={()=>{saveGame(GRef.current);setG(null);setUi({});}}/>}
+      {ui.rmap&&<RegionMap G={G} onClose={()=>closeUi("rmap")}/>}
+      {ui.stash&&<StashBox G={G} setG={setG} onClose={()=>closeUi("stash")}/>}
+      {ui.craft&&<CraftBox G={G} setG={setG} push={push} onClose={()=>closeUi("craft")}/>}
+      {ui.quiz&&<QuizBox q={ui.quiz} setQ={q=>setUi(u=>({...u,quiz:q}))} G={G} setG={setG} push={push} onClose={()=>closeUi("quiz")}/>}
+      {ui.gamble&&<GambleBox g0={ui.gamble} set={x=>setUi(u=>({...u,gamble:x}))} G={G} setG={setG} push={push} onClose={()=>closeUi("gamble")}/>}
+      {ui.golf&&<GolfBox st={ui.golf} set={x=>setUi(u=>({...u,golf:x}))} G={G} setG={setG} push={push} onClose={()=>closeUi("golf")}/>}
+      {evoQ.length>0&&!B&&<EvoBox idx={evoQ[0]} G={G} onPick={confirmEvo}/>}
+      {toast&&<div className="toast">{toast}</div>}
+    </div>
+    {/* controls */}
+    <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginTop:12,padding:"0 4px"}}>
+      <div style={{display:"grid",gridTemplateColumns:"repeat(3,46px)",gridTemplateRows:"repeat(3,42px)",gap:3}}>
+        <span/><button className="dpadb press" onClick={()=>move(0,-1)}>▲</button><span/>
+        <button className="dpadb press" onClick={()=>move(-1,0)}>◀</button><span/>
+        <button className="dpadb press" onClick={()=>move(1,0)}>▶</button>
+        <span/><button className="dpadb press" onClick={()=>move(0,1)}>▼</button><span/>
+      </div>
+      <div className="silk" style={{fontSize:7,color:"var(--cream)",opacity:.5,textAlign:"center",lineHeight:1.7}}>
+        #agm · #doyouwantit<br/>touch &amp; love, love &amp; touch</div>
+      <div style={{display:"flex",gap:10,alignItems:"center"}}>
+        <button className="abb press" onClick={()=>{ if(G&&G.screen==="world"&&!B)setUi(u=>({...u,any:1,menu:"party"}));}}>B</button>
+        <button className="abb press" style={{background:"var(--send)"}} onClick={()=>{
+          if(ui.dialog){const d=uiRef.current.dialog;
+            if(d.i<d.lines.length-1)setUi(u=>({...u,dialog:{...d,i:d.i+1}}));else closeUi("dialog");}
+          else interact();}}>A</button>
+      </div>
+    </div>
+  </div>);
+
+  function healUseItem(id,monIdx){
+    const it=ITEMS[id];
+    setG(p=>{const party=p.party.map((m,i)=>{
+      if(i!==monIdx)return m;const m2={...m};
+      if(it.heal&&m2.hp>0)m2.hp=clamp(m2.hp+it.heal,0,m2.stats.hp);
+      if(it.revive&&m2.hp<=0)m2.hp=Math.floor(m2.stats.hp*it.revive);
+      if(it.cure&&(it.cure==="ALL"||m2.status===it.cure))m2.status=null;
+      return m2;});
+      sfx.heal();return {...p,party,bag:addItem(p.bag,id,-1)};});
+  }
+}
+
+/* ================= SCREENS ================= */
+function TitleScreen({onNew,onCont}){
+  return <div className="pad" style={{height:"100%",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",textAlign:"center",position:"relative"}}>
+    <div className="stampbox">CLASSIFIED</div>
+    <div className="silk" style={{fontSize:34,lineHeight:1.15,textShadow:"2px 2px 0 rgba(255,255,255,.25)"}}>DEAL<br/>DEX</div>
+    <div style={{height:3,width:130,background:"var(--ink)",margin:"16px 0 10px",opacity:.6}}/>
+    <p style={{fontSize:20,maxWidth:320,lineHeight:1.15}}>A Security Council field survey of the strains, gardens, poker legends &amp; lads of Deal, Kent.</p>
+    <p style={{color:"var(--inkDim)",fontSize:16,marginTop:6}}>8 chips · 90 strains · the famous Jacket</p>
+    <button className="btn press" style={{maxWidth:280,marginTop:18}} onClick={onNew}>NEW GAME ▸</button>
+    {hasSave()&&<button className="btn press" style={{maxWidth:280,marginTop:8,background:"var(--amber)"}} onClick={onCont}>CONTINUE ▸</button>}
+    <p style={{color:"var(--inkDim)",fontSize:13,marginTop:14}}>an affectionate parody · strictly non-sexual</p></div>;
+}
+function IntroScreen({G,onStart}){
+  const hero={simon:"Simon",kettle:"Kettle",oli:"Oli"}[G.hero]||"Recruit";
+  return <div className="pad" style={{height:"100%",display:"flex",flexDirection:"column",justifyContent:"center",textAlign:"center"}}>
+    <div className="stampbox">BRIEFING</div>
+    <p style={{fontSize:18,lineHeight:1.35,margin:"10px 0"}}>Welcome to The Annexe, {hero}. You're the newest recruit of the Security Council Field Unit.</p>
+    <p style={{fontSize:15,lineHeight:1.4,color:"var(--inkDim)",margin:"6px 0"}}>Your mission: explore Deal and beyond, catching wild strains and building your Dex. Throw a Tin to try to catch one — it can always break free, so bring a few.</p>
+    <p style={{fontSize:15,lineHeight:1.4,color:"var(--inkDim)",margin:"6px 0"}}>Battle to earn coins and XP. Win enough fights and your strains level up — some will evolve into stronger forms at a set level, shown in the Dex once you've seen them.</p>
+    <p style={{fontSize:15,lineHeight:1.4,color:"var(--inkDim)",margin:"6px 0"}}>Seek out and defeat the 8 TPT chip holders scattered round the region. Collect all 8 to earn a shot at the LBT Masters — and maybe The Jacket.</p>
+    <button className="btn press" style={{maxWidth:280,margin:"18px auto 0"}} onClick={onStart}>ENTER THE ANNEXE ▸</button>
+  </div>;
+}
+function SelectScreen({onPick}){
+  const H={simon:{tag:"The Architect",bio:"Builds an app for everything. May control the weather. Starter: LS1.",q:"Remind me: I figured it out."},
+    kettle:{tag:"The Window Cleaner",bio:"Rounds by day, strong nods by night. Never a Geoff. Starter: Sweet Tooth.",q:"*strong nod*"},
+    oli:{tag:"The Courier",bio:"Musical theatre star and Eagle-drop courier. Starter: Wasabi Seed.",q:"Touch and love, love and touch."}};
+  return <div className="pad" style={{height:"100%",overflowY:"auto"}}>
+    <div className="silk" style={{fontSize:13,letterSpacing:1}}>CHOOSE YOUR LAD</div>
+    <p style={{color:"var(--inkDim)",fontSize:15,margin:"4px 0 10px"}}>The other two become your rivals — they scale as you win chips.</p>
+    {Object.entries(H).map(([id,h])=><button key={id} onClick={()=>onPick(id)} className="press"
+      style={{textAlign:"left",width:"100%",marginBottom:10,background:"rgba(255,255,255,.28)",border:"2px solid var(--ink)",borderRadius:10,padding:10}}>
+      <div style={{display:"flex",justifyContent:"space-between"}}><span className="silk" style={{fontSize:13}}>{cap(id)}</span>
+        <Pill col="var(--ink)">{h.tag}</Pill></div>
+      <p style={{fontSize:16,lineHeight:1.15,margin:"6px 0 4px"}}>{h.bio}</p>
+      <span style={{color:"var(--inkDim)",fontSize:14,fontStyle:"italic"}}>“{h.q}”</span></button>)}</div>;
+}
+function World({G,npcVisible}){
+  const M=MAPS[G.map];
+  const vh=useViewRows();
+  const camX=clamp(G.x-Math.floor(VW/2),0,Math.max(0,M.w-VW)),camY=clamp(G.y-Math.floor(vh/2),0,Math.max(0,M.h-vh));
+  const tiles=[];
+  for(let y=camY;y<Math.min(M.h,camY+vh);y++)for(let x=camX;x<Math.min(M.w,camX+VW);x++){
+    const ch=M.rows[y][x];
+    const picked=G.picked["c:"+G.map+":"+x+","+y];
+    tiles.push(<div key={x+"_"+y} className={"tile"+(ch==="w"?" wat":"")} style={{left:(x-camX)*TS,top:(y-camY)*TS,width:TS,height:TS,
+      background:TILE_BG[ch]||"#c7dab0",fontSize:ch==="#"||ch==="b"?20:(ch==="M"?18:15),
+      backgroundImage:ch==="g"?"radial-gradient(circle at 30% 40%, rgba(40,90,40,.25) 2px, transparent 2px)":
+        ch==="G"?"radial-gradient(circle at 30% 40%, rgba(20,60,20,.4) 3px, transparent 3px)":
+        ch===","?"radial-gradient(circle at 60% 60%, rgba(160,130,60,.25) 1.5px, transparent 2px)":
+        ch==="b"?"repeating-linear-gradient(rgba(255,255,255,.14) 0 1px, transparent 1px 8px), repeating-linear-gradient(90deg, rgba(0,0,0,.28) 0 1px, transparent 1px 15px)":
+        ch==="M"?"radial-gradient(circle at 50% 45%, rgba(232,163,60,.55), transparent 70%)":"none",
+      boxShadow:ch==="M"?"inset 0 0 0 2px var(--gold)":(ch==="b"?"inset 0 0 0 2px rgba(0,0,0,.35), inset 0 -4px 0 rgba(0,0,0,.28)":"none"),
+      backgroundSize:ch==="b"?"15px 30px":"8px 8px"}}>
+      {ch==="c"&&!picked?<span className="flo">🪙</span>:TILE_GL[ch]||""}
+      {ch==="G"&&<span style={{fontSize:16}}>🌾</span>}
+      {M.dark&&<span style={{position:"absolute",inset:0,background:"rgba(5,10,25,.35)"}}/>}
+    </div>);}
+  const npcs=NPCS.filter(n=>n.map===G.map&&npcVisible(n,G)&&n.x>=camX&&n.x<camX+VW&&n.y>=camY&&n.y<camY+vh);
+  const dirGl={N:"🚶",S:"🚶",E:"🚶",W:"🚶"};
+  return <div className="pad" style={{height:"100%",display:"flex",flexDirection:"column"}}>
+    <div style={{display:"flex",justifyContent:"space-between",fontSize:15,marginBottom:4}}>
+      <span className="silk" style={{fontSize:9}}>{cap(G.hero)}</span>
+      <span>🪙{G.coins} · 🎖{G.chips.length}/8 · {["🌅","☀️","🌇","🌙"][G.phase]} {M.name}</span></div>
+    <div className="vp" style={{width:VW*TS,height:vh*TS,maxWidth:"100%"}}>
+      {tiles}
+      {npcs.map(n=><div key={n.id} className="spr" style={{left:(n.x-camX)*TS,top:(n.y-camY)*TS,width:TS,height:TS,fontSize:19}}
+        title={n.name}><span style={{filter:(n.type==="trainer"&&G.beaten[TRAINERS[n.trainer]?.id])?"grayscale(1) opacity(.7)":"none"}}>{n.glyph}</span></div>)}
+      <div className="spr bob" style={{left:(G.x-camX)*TS,top:(G.y-camY)*TS,width:TS,height:TS,fontSize:20,zIndex:6,
+        transform:G.dir==="W"?"scaleX(-1)":"none"}}>{dirGl[G.dir]}</div>
+      <div className="tint" style={{background:PHASE_TINT[G.phase]}}/>
+      {G.weatherOw==="rain"&&<div className="rain"/>}
+      {G.weatherOw==="mist"&&<div className="tint" style={{background:"rgba(200,220,230,.22)"}}/>}
+    </div>
+    <div style={{marginTop:"auto",display:"flex",gap:6,paddingTop:8}}>
+      <button className="tabb press" onClick={()=>window.dispatchEvent(new KeyboardEvent("keydown",{key:"Enter"}))}>A: Talk / Check</button>
+      <button className="tabb press" onClick={()=>window.dispatchEvent(new KeyboardEvent("keydown",{key:"Escape"}))}>B: Menu</button>
+      <button className="tabb press" onClick={()=>window.dispatchEvent(new KeyboardEvent("keydown",{key:"m"}))}>🗺️ Map</button>
+    </div>
+    <p style={{color:"var(--inkDim)",fontSize:12,textAlign:"center",marginTop:4}}>Arrows/WASD move · Enter interact · Esc menu · repel {G.repel>0?G.repel+" steps":"off"}</p>
+  </div>;
+}
+function RegionMap({G,onClose}){
+  /* connections come straight from each map's warp list, so this can never drift from the real world */
+  const visited=G.visited||{};
+  const edges=new Set();
+  Object.values(MAPS).forEach(m=>{(m.warps||[]).forEach(w=>{if(w.to&&MAPS[w.to]){const k=[m.id,w.to].sort().join("|");edges.add(k);}});});
+  // list visited maps first, then known-adjacent unvisited (as "???")
+  const known=new Set(Object.keys(visited));
+  Object.values(MAPS).forEach(m=>{if(visited[m.id])(m.warps||[]).forEach(w=>{if(w.to)known.add(w.to);});});
+  const list=Object.values(MAPS).filter(m=>known.has(m.id)).sort((a,b)=>(visited[b.id]?1:0)-(visited[a.id]?1:0));
+  const connOf=id=>[...edges].filter(e=>e.split("|").includes(id)).map(e=>e.split("|").find(x=>x!==id)).filter(x=>known.has(x));
+  return <div className="overlay">
+    <div className="silk" style={{fontSize:11,marginBottom:4}}>REGION MAP</div>
+    <p style={{fontSize:13,color:"var(--inkDim)",margin:"0 0 8px"}}>Explored {Object.keys(visited).length} / {Object.keys(MAPS).length}. You are at <b style={{color:"var(--gold)"}}>{MAPS[G.map].name}</b>.</p>
+    <div className="scroll">
+      {list.map(m=>{const here=m.id===G.map, seen=visited[m.id];
+        return <div key={m.id} style={{padding:"7px 9px",marginBottom:5,borderRadius:8,
+          border:here?"2px solid var(--gold)":"1px solid rgba(0,0,0,.25)",
+          background:here?"rgba(232,163,60,.18)":(seen?"rgba(255,255,255,.14)":"rgba(0,0,0,.14)"),opacity:seen?1:.55}}>
+          <div style={{display:"flex",alignItems:"center",gap:6}}>
+            <span style={{fontSize:16}}>{here?"📍":m.indoor?"🚪":seen?"🗺️":"❔"}</span>
+            <b style={{fontSize:14}}>{seen?m.name:"??? (unexplored)"}</b>
+            {here&&<Pill col="var(--gold)">here</Pill>}</div>
+          {seen&&connOf(m.id).length>0&&<div style={{fontSize:12,color:"var(--inkDim)",marginTop:2,marginLeft:22}}>↔ {connOf(m.id).map(c=>visited[c]?MAPS[c].name:"???").join(" · ")}</div>}
+        </div>;})}
+    </div>
+    <Btn col="var(--stamp)" style={{color:"#fff",width:"100%",marginTop:8}} on={onClose}>Close</Btn>
+  </div>;
+}
+function DialogBox({d,onNext}){
+  return <div className="overlay" onClick={d.choice?undefined:onNext} style={{cursor:"pointer"}}>
+    <div className="silk" style={{fontSize:11,marginBottom:6}}>{d.name}</div>
+    <p style={{fontSize:18,lineHeight:1.2,minHeight:44}}>{d.lines[d.i]}</p>
+    <div style={{display:"flex",gap:6,justifyContent:"flex-end",marginTop:6}}>
+      {d.choice&&d.i===d.lines.length-1&&<Btn col="var(--stamp)" style={{color:"#fff"}} on={e=>{e.stopPropagation();d.choice.fn();}}>{d.choice.label}</Btn>}
+      <Btn on={e=>{e.stopPropagation();onNext();}}>{d.i<d.lines.length-1?"▸":"OK"}</Btn></div></div>;
+}
+function BattleTutorial({onClose}){
+  return <div className="fullov">
+    <b className="silk" style={{fontSize:11}}>YOUR FIRST BATTLE</b>
+    <p style={{fontSize:14,lineHeight:1.4,marginTop:6}}>⚔ <b>Fight</b> — pick a move. Move priority, then Speed, decides who goes first each turn.</p>
+    <p style={{fontSize:14,lineHeight:1.4}}>🎒 <b>Bag</b> — throw a Tin to try to catch a wild strain, or use an item to heal HP or cure a status.</p>
+    <p style={{fontSize:14,lineHeight:1.4}}>↺ <b>Switch</b> — bring in another strain from your party.</p>
+    <p style={{fontSize:14,lineHeight:1.4}}>🏃 <b>Run</b> — try to flee (can't run from trainers).</p>
+    <p style={{fontSize:14,lineHeight:1.4}}>HP hits 0 and a strain faints. A coloured pill means a status condition — each one has a specific cure item, shown once it's active.</p>
+    <button className="btn press" style={{marginTop:10}} onClick={onClose}>Got it</button>
+  </div>;
+}
+function BattleScreen({B,G,onMenu,onMove,onRun,onDone,openBag,openParty}){
+  const my=B.my.mon,foe=B.foe.mon;
+  return <div className={"pad "+(B.shake||"")} style={{height:"100%",display:"flex",flexDirection:"column",position:"relative"}}>
+    {B.swirl&&<div className="swirl"/>}
+    <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start"}}>
+      <div className="panel" style={{minWidth:170}}>
+        <div style={{display:"flex",justifyContent:"space-between",gap:6}}>
+          <b style={{fontSize:16}}>{DEX[foe.sp].name}</b><span style={{fontSize:14}}>Lv.{foe.lvl}</span></div>
+        {B.kind==="wild"&&(B.foeNew?<Pill col="var(--amber)">NEW!</Pill>:<Pill col="var(--inkDim)">seen before</Pill>)}
+        <HPBar hp={foe.hp} max={foe.stats.hp}/>
+        <div style={{fontSize:13,color:"var(--inkDim)",textAlign:"right"}}>{foe.hp}/{foe.stats.hp}</div>
+        <div style={{display:"flex",gap:4,marginTop:3}}>{typePills(foe.sp)}{foe.status&&<Pill col={STATUS[foe.status].col}>{STATUS[foe.status].name}</Pill>}</div>
+      </div>
+      <div className={B.tinAnim?"catchwob":""}><MonSprite sp={foe.sp} size={78} anim={B.animFoe+" flo"}/></div>
+    </div>
+    <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-end",marginTop:6}}>
+      <MonSprite sp={my.sp} size={86} anim={B.animMy}/>
+      <div className="panel" style={{minWidth:180}}>
+        <div style={{display:"flex",justifyContent:"space-between",gap:6}}>
+          <b style={{fontSize:16}}>{DEX[my.sp].name}</b><span style={{fontSize:14}}>Lv.{my.lvl}</span></div>
+        <HPBar hp={my.hp} max={my.stats.hp}/>
+        <div style={{fontSize:13,color:"var(--inkDim)",textAlign:"right"}}>{my.hp}/{my.stats.hp}</div>
+        <XPBar m={my}/>
+        <div style={{display:"flex",gap:4,marginTop:3,justifyContent:"flex-end"}}>{my.status&&<Pill col={STATUS[my.status].col}>{STATUS[my.status].name}</Pill>}
+          {my.item&&<Pill col="var(--inkDim)">{ITEMS[my.item].name}</Pill>}</div>
+        {my.status&&<div style={{fontSize:11,color:"var(--inkDim)",textAlign:"right"}}>Cured by {STATUS_CURE[my.status]} (or Agent of Chill)</div>}
+      </div>
+    </div>
+    <div className="panelD" style={{marginTop:8,height:108,overflowY:"auto",fontSize:15,lineHeight:1.2}} ref={el=>{if(el)el.scrollTop=el.scrollHeight;}}>
+      {B.log.slice(-14).map((l,i)=><div key={i} style={{opacity:i===Math.min(13,B.log.length-1)?1:.7}}>{l}</div>)}
+      {B.weather!=="clear"&&<div style={{position:"sticky",top:0,float:"right",fontSize:13,color:"var(--inkDim)"}}>
+        {({mist:"🌫 mist",rain:"🌧 rain",heat:"🔥 heat"})[B.weather]}</div>}
+    </div>
+    <div style={{marginTop:"auto",paddingTop:8}}>
+      {B.over?<button className="btn press" onClick={onDone}>{B.champion?"◈ CLAIM THE JACKET ◈":"▸ Continue"}</button>:
+       B.menu==="main"?<div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:6}}>
+        <Btn col="var(--stamp)" style={{color:"#fff"}} dis={B.busy} on={()=>onMenu("fight")}>⚔ Fight</Btn>
+        <Btn col="var(--amber)" dis={B.busy} on={openBag}>🎒 Bag</Btn>
+        <Btn dis={B.busy} on={openParty}>↺ Switch</Btn>
+        <Btn col={B.trainer?"#8aa07f":"var(--ink)"} style={{color:"#fff"}} dis={B.busy||!!B.trainer} on={onRun}>🏃 Run</Btn></div>:
+       B.menu==="fight"?<div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:6}}>
+        {my.moves.map(s=>{const m=MOVES[s.id];
+          const eff=m.cat==="T"?1:typeMult(m.type,DEX[foe.sp].types);
+          const effLabel=eff>=2?"Super effective":eff===0?"No effect":eff>1?"Effective":eff===1?"":eff>0.5?"Resisted":"Barely scratches";
+          const effCol=eff>1.5?"#8fe39c":eff<1&&eff>0?"#f0a06a":eff===0?"#e06a6a":"rgba(255,255,255,.85)";
+          return <button key={s.id} className="press" disabled={B.busy||s.pp<=0} onClick={()=>onMove(s)}
+            style={{background:TCOL[m.type],color:"#fff",border:"2px solid var(--ink)",borderRadius:8,padding:"6px",textAlign:"left"}}>
+            <div style={{fontSize:15,fontWeight:700,lineHeight:1.05}}>{m.name}</div>
+            <div style={{fontSize:12,opacity:.9}}>{m.type} · {m.cat==="P"?"Phys":m.cat==="S"?"Spec":"Status"}{m.pow?" · "+m.pow:""} · PP {s.pp}/{m.pp}</div>
+            {effLabel&&<div style={{fontSize:11,fontWeight:700,color:effCol,marginTop:1}}>{eff>=2?"▲ ":eff<1?"▼ ":""}{effLabel}</div>}</button>;})}
+        <Btn col="var(--ink)" style={{color:"#fff",gridColumn:"1/3"}} on={()=>onMenu("main")}>◂ Back</Btn></div>:null}
+    </div></div>;
+}
+function VictoryScreen({G,onBack}){
+  return <div className="pad" style={{height:"100%",display:"flex",flexDirection:"column",justifyContent:"center",textAlign:"center"}}>
+    <div style={{fontSize:52}}>🧥🏆</div>
+    <div className="silk" style={{fontSize:15,marginTop:8,lineHeight:1.4}}>LBT PAR 3 MASTERS<br/>CHAMPION</div>
+    <div style={{height:3,width:140,background:"var(--ink)",margin:"12px auto",opacity:.6}}/>
+    <p style={{fontSize:18,lineHeight:1.2,maxWidth:330,margin:"0 auto"}}>
+      {cap(G.hero)} subdued THE VOLCANO, ran the Council gauntlet, and claimed the famous LBT Jacket. The minutes will record it forever. #doyouwantit</p>
+    <p style={{color:"var(--inkDim)",fontSize:15,marginTop:10}}>Post-game: legendaries roam, the TPT Nine want rematches, and the Volcano will now allow one tin...</p>
+    <button className="btn press" style={{maxWidth:280,margin:"16px auto 0"}} onClick={onBack}>↩ Keep exploring</button></div>;
+}
+function EvoBox({idx,G,onPick}){
+  const m=G.party[idx]; if(!m||!DEX[m.sp].evo)return null;
+  const to=DEX[m.sp].evo.to;
+  return <div className="fullov" style={{display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",textAlign:"center"}}>
+    <p style={{fontSize:19}}>What? {DEX[m.sp].name} is evolving!</p>
+    <div className="growanim" style={{margin:"14px 0"}}><MonSprite sp={to} size={100}/></div>
+    <p style={{fontSize:20,fontWeight:700}}>{DEX[m.sp].name} → {DEX[to].name}</p>
+    <p style={{fontSize:14,color:"var(--inkDim)",maxWidth:300}}>{DEX[to].flavor}</p>
+    <div style={{display:"flex",gap:8,marginTop:14}}>
+      <Btn on={()=>onPick(idx,true)}>Evolve!</Btn>
+      <Btn col="var(--stamp)" style={{color:"#fff"}} on={()=>onPick(idx,false)}>Not yet (B)</Btn></div></div>;
+}
+function ShopBox({shop,G,setG,push,onClose}){
+  const [tab,setTab]=useState("buy");
+  return <div className="fullov">
+    <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+      <b className="silk" style={{fontSize:11}}>{shop.name}</b><span>🪙 {G.coins}</span></div>
+    <p style={{color:"var(--inkDim)",fontSize:14,fontStyle:"italic"}}>{shop.tag}</p>
+    <div style={{display:"flex",gap:5,margin:"6px 0"}}>
+      <button className={"tabb press"+(tab==="buy"?" on":"")} onClick={()=>setTab("buy")}>Buy</button>
+      <button className={"tabb press"+(tab==="sell"?" on":"")} onClick={()=>setTab("sell")}>Sell</button></div>
+    {tab==="buy"?shop.stock.map(id=>{const it=ITEMS[id];
+      return <div key={id} className="menurow"><span>{it.name} — {it.price}🪙<div style={{fontSize:13,color:"var(--inkDim)"}}>{it.desc}</div></span>
+        <Btn dis={G.coins<it.price} on={()=>{setG(p=>({...p,coins:p.coins-it.price,bag:addItem(p.bag,id,1)}));sfx.coin();push("Bought "+it.name+".");}}>Buy</Btn></div>;}):
+     Object.entries(G.bag).filter(([id])=>ITEMS[id].price>0).map(([id,n])=>{const it=ITEMS[id],v=Math.floor(it.price/2);
+      return <div key={id} className="menurow"><span>{it.name} ×{n} — sell {v}🪙</span>
+        <Btn col="var(--amber)" on={()=>{setG(p=>({...p,coins:p.coins+v,bag:addItem(p.bag,id,-1)}));sfx.coin();}}>Sell</Btn></div>;})}
+    <button className="btn press" style={{marginTop:8}} onClick={onClose}>Leave shop</button></div>;
+}
+function MenuBox({G,setG,push,tab,setTab,onClose,healUse,onQuit}){
+  const tabs=["party","dex","bag","quests","chips","areas","awards","sys"];
+  const labels={party:"Party",dex:"Dex",bag:"Bag",quests:"Quests",chips:"Chips",areas:"Areas",awards:"Awards",sys:"Sys"};
+  const [sel,setSel]=useState(null); const [useItem,setUseItem]=useState(null); const [card,setCard]=useState(null);
+  const caught=Object.values(G.dex).filter(d=>d.caught).length,seen=Object.values(G.dex).filter(d=>d.seen).length;
+  return <div className="fullov">
+    <div style={{display:"flex",gap:4,marginBottom:8,flexWrap:"wrap"}}>
+      {tabs.map(t=><button key={t} className={"tabb press"+(t===tab?" on":"")} onClick={()=>{setTab(t);setSel(null);}}>{labels[t]}</button>)}
+      <button className="tabb press" style={{background:"var(--stamp)",color:"#fff",flex:"0 0 40px"}} onClick={onClose}>✕</button></div>
+    {tab==="party"&&<div>
+      {G.party.map((m,i)=><div key={m.uid} className="menurow" style={{cursor:"pointer"}} onClick={()=>setSel(sel===i?null:i)}>
+        <span onClick={e=>{e.stopPropagation();setCard({sp:m.sp,mon:m});}} title="View card"><MonSprite sp={m.sp} size={30}/> </span>
+        <span style={{flex:1,marginLeft:8}}>{DEX[m.sp].name} Lv.{m.lvl}
+          <HPBar hp={m.hp} max={m.stats.hp}/><XPBar m={m}/></span>
+        <span style={{fontSize:13,marginLeft:6}}>{m.hp}/{m.stats.hp}{m.status?" · "+STATUS[m.status].name:""}</span></div>)}
+      {sel!=null&&G.party[sel]&&<PartyDetail m={G.party[sel]} i={sel} G={G} setG={setG} healUse={healUse} useItem={useItem} setUseItem={setUseItem}/>}
+    </div>}
+    {tab==="dex"&&<div><p style={{fontSize:14,color:"var(--inkDim)"}}>Seen {seen} · Caught {caught} / {Object.keys(DEX).length} — Sativa▸Hybrid▸Indica▸Sativa · Kush▸Diesel▸Haze▸Kush</p>
+      <div style={{maxHeight:420,overflowY:"auto"}}>
+      {Object.values(DEX).map(d=>{const e=G.dex[d.id]||{};
+        return <div key={d.id} className="menurow" style={{opacity:e.seen?1:.45,cursor:e.seen?"pointer":"default"}} onClick={()=>e.seen&&setCard({sp:d.id})}>
+          <span style={{width:34,textAlign:"center",fontSize:20}}>{e.seen?TGLYPH[d.types[0]]:"❔"}</span>
+          <span style={{flex:1,marginLeft:6}}><b>#{String(d.n).padStart(2,"0")} {e.seen?d.name:"???"}</b>
+            {e.seen&&<div style={{fontSize:13,color:"var(--inkDim)",lineHeight:1.1}}>{d.flavor}</div>}
+            {e.seen&&d.evo&&<div style={{fontSize:12,color:"var(--send)"}}>→ Evolves into {(G.dex[d.evo.to]&&G.dex[d.evo.to].seen)?DEX[d.evo.to].name:"???"} at Lv.{d.evo.lvl}</div>}</span>
+          <span style={{display:"flex",gap:3,flexDirection:"column",alignItems:"flex-end"}}>
+            {e.seen&&d.types.map(t=><Pill key={t} col={TCOL[t]}>{t}</Pill>)}
+            {e.caught&&<Pill col="var(--send)">caught</Pill>}</span></div>;})}</div></div>}
+    {tab==="areas"&&<div style={{maxHeight:440,overflowY:"auto"}}>
+      <p style={{fontSize:14,color:"var(--inkDim)"}}>Areas explored: {Object.keys(G.visited||{}).length} / {Object.keys(MAPS).length}</p>
+      {Object.values(MAPS).map(m=>{const v=(G.visited||{})[m.id];
+        return <div key={m.id} className="menurow" style={{opacity:v?1:.45}}>
+          <span style={{width:26,textAlign:"center",fontSize:18}}>{m.indoor?"🏠":"🗺️"}</span>
+          <span style={{flex:1,marginLeft:6}}>{v?m.name:"???"}</span>
+          {v&&<Pill col="var(--send)">visited</Pill>}</div>;})}</div>}
+    {tab==="bag"&&<div style={{maxHeight:440,overflowY:"auto"}}>
+      {Object.entries(G.bag).length===0&&<p>Empty. An invitation to shop.</p>}
+      {Object.entries(G.bag).map(([id,n])=>{const it=ITEMS[id];
+        return <div key={id} className="menurow"><span>{it.name} ×{n}<div style={{fontSize:13,color:"var(--inkDim)"}}>{it.desc}</div></span>
+          {(it.heal||it.cure||it.revive)&&<Btn on={()=>setUseItem(id)||setTab("party")}>Use</Btn>}
+          {it.repel&&<Btn on={()=>{setG(p=>({...p,repel:it.repel,bag:addItem(p.bag,id,-1)}));push("Bug Spray on. "+it.repel+" steps.");}}>Use</Btn>}
+          {it.warp&&<Btn on={()=>{setG(p=>({...p,map:"annexe",x:4,y:6,bag:addItem(p.bag,id,-1)}));push("A side quest whisks you home.");onClose();}}>Use</Btn>}
+        </div>;})}
+      {useItem&&<p style={{fontSize:14}}>Now pick a strain in Party to use {ITEMS[useItem].name} on.</p>}</div>}
+    {tab==="quests"&&<div style={{maxHeight:440,overflowY:"auto"}}>
+      {Object.entries(G.quests).filter(([,q])=>q.active||q.done).length===0&&<p>No quests yet. Talk to people. Read the notice board.</p>}
+      {Object.entries(G.quests).filter(([,q])=>q.active||q.done).map(([id,q])=>{const Q=QUESTS[id];
+        return <div key={id} className="menurow" style={{alignItems:"flex-start"}}>
+          <span style={{flex:1}}><b>{q.done?"✅":"▫️"} {Q.name}</b>
+            <div style={{fontSize:14,lineHeight:1.15}}>{Q.desc}</div>
+            {!q.done&&<div style={{fontSize:13,color:"var(--inkDim)"}}>Hint: {Q.hint}</div>}</span></div>;})}</div>}
+    {tab==="chips"&&<div><p style={{fontSize:15}}>The TPT chip run. Eight legends. The usual format (no loop).</p>
+      {G.chips.length>=8?<p style={{fontSize:15,color:"var(--send)",fontWeight:"bold",marginTop:6}}>🏆 All 8 collected — the LBT Masters is open! Head to Stonelees.</p>:
+        G.chips.length>=6?<p style={{fontSize:14,color:"var(--amber)",marginTop:6}}>Getting close — {8-G.chips.length} chip{8-G.chips.length===1?"":"s"} left before the Masters gauntlet unlocks at Stonelees.</p>:null}
+      <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:8,marginTop:8}}>
+      {[1,2,3,4,5,6,7,8].map(c=><div key={c} style={{aspectRatio:"1",borderRadius:"50%",border:"3px dashed var(--ink)",
+        display:"flex",alignItems:"center",justifyContent:"center",fontSize:26,
+        background:G.chips.includes(c)?"var(--gold)":"rgba(255,255,255,.2)",opacity:G.chips.includes(c)?1:.5}}>
+        {G.chips.includes(c)?"🪙":c}</div>)}</div>
+      <p style={{fontSize:13,color:"var(--inkDim)",marginTop:8}}>1 Sam Cheeseman (Clubhouse) · 2 Palmer (Stonelees) · 3 Butcher (Sandwich) · 4 Elrond (Canterbury Rd) · 5 Quadzilla (Dover) · 6 The Pope (Peace Chapel) · 7 Queen Cheese (Tilgate) · 8 The Daddy (Dernwood)</p></div>}
+    {tab==="awards"&&<div style={{maxHeight:440,overflowY:"auto"}}>
+      {ACHV.map(a=><div key={a.id} className="menurow" style={{opacity:G.achv[a.id]?1:.5}}>
+        <span>{G.achv[a.id]?"🏅":"▫️"} <b>{a.name}</b><div style={{fontSize:13,color:"var(--inkDim)"}}>{a.desc}</div></span></div>)}</div>}
+    {card&&<StrainCard sp={card.sp} mon={card.mon} dexNo={DEX[card.sp].n} onClose={()=>setCard(null)}/>}
+    {tab==="sys"&&<div>
+      <div className="menurow"><span>Save game</span><Btn on={()=>{saveGame(G);push("Saved. xx");}}>Save</Btn></div>
+      <div className="menurow"><span>Sound</span><Btn on={()=>setG(p=>({...p,settings:{...p.settings,sound:!p.settings.sound}}))}>{G.settings.sound?"On":"Off"}</Btn></div>
+      <div className="menurow"><span>Day {G.day} · {PHASES[G.phase]} · Steps {G.steps}</span><span/></div>
+      <div className="menurow"><span>Swarm today: {DEX[swarmOf(G.day)].name}</span><span/></div>
+      <div className="menurow"><span>Quit to title (autosaves)</span><Btn col="var(--stamp)" style={{color:"#fff"}} on={onQuit}>Quit</Btn></div>
+      <div className="menurow"><span>Erase save</span><Btn col="var(--stamp)" style={{color:"#fff"}} on={()=>{clearSave();push("Save erased.");}}>Erase</Btn></div></div>}
+  </div>;
+  function PartyDetail({m,i,G,setG,healUse,useItem,setUseItem}){
+    return <div className="panelD" style={{marginTop:6}}>
+      <div style={{display:"flex",gap:4,flexWrap:"wrap"}}>{typePills(m.sp)}{m.item&&<Pill col="var(--inkDim)">holds {ITEMS[m.item].name}</Pill>}</div>
+      {m.status&&<p style={{fontSize:13,color:"var(--stamp)",margin:"4px 0"}}>⚠ {STATUS[m.status].name} — {STATUS[m.status].desc} Cured by {STATUS_CURE[m.status]} (or Agent of Chill).</p>}
+      <p style={{fontSize:13,margin:"4px 0"}}>{DEX[m.sp].flavor}</p>
+      {DEX[m.sp].evo&&<p style={{fontSize:13,color:"var(--send)",margin:"4px 0"}}>→ Evolves into {DEX[DEX[m.sp].evo.to].name} at Lv.{DEX[m.sp].evo.lvl}</p>}
+      <div style={{fontSize:14}}>ATK {m.stats.atk} · DEF {m.stats.def} · SpA {m.stats.sa} · SpD {m.stats.sd} · SPE {m.stats.spe}</div>
+      <div style={{fontSize:14,marginTop:4}}>{m.moves.map(s=><Pill key={s.id} col={TCOL[MOVES[s.id].type]}>{MOVES[s.id].name} {s.pp}/{MOVES[s.id].pp}</Pill>)}</div>
+      <div style={{display:"flex",gap:5,marginTop:6,flexWrap:"wrap"}}>
+        {useItem&&<Btn on={()=>{healUse(useItem,i);setUseItem(null);}}>Use {ITEMS[useItem].name}</Btn>}
+        {i>0&&<Btn on={()=>setG(p=>{const party=[...p.party];[party[i-1],party[i]]=[party[i],party[i-1]];return {...p,party};})}>▲ Move up</Btn>}
+        {Object.entries(G.bag).filter(([id])=>ITEMS[id].held).slice(0,3).map(([id])=>
+          <Btn key={id} col="var(--amber)" on={()=>setG(p=>{
+            const party=p.party.map((x,j)=>j===i?{...x,item:id}:x);
+            let bag=addItem(p.bag,id,-1); if(m.item)bag=addItem(bag,m.item,1);
+            return {...p,party,bag};})}>Hold {ITEMS[id].name}</Btn>)}
+        {m.item&&<Btn col="var(--stamp)" style={{color:"#fff"}} on={()=>setG(p=>({...p,
+          party:p.party.map((x,j)=>j===i?{...x,item:null}:x),bag:addItem(p.bag,m.item,1)}))}>Unequip</Btn>}
+      </div></div>;
+  }
+}
+function StashBox({G,setG,onClose}){
+  return <div className="fullov"><b className="silk" style={{fontSize:11}}>THE STASH</b>
+    <p style={{fontSize:14,color:"var(--inkDim)"}}>Party {G.party.length}/6 · Stored {G.box.length}</p>
+    <p style={{fontSize:15,marginTop:4}}><b>Party</b> (tap to store)</p>
+    {G.party.map((m,i)=><div key={m.uid} className="menurow"><span>{DEX[m.sp].name} Lv.{m.lvl}</span>
+      <Btn dis={G.party.length<=1} on={()=>setG(p=>({...p,party:p.party.filter((_,j)=>j!==i),box:[...p.box,m]}))}>Store</Btn></div>)}
+    <p style={{fontSize:15,marginTop:4}}><b>Stash</b> (tap to withdraw)</p>
+    {G.box.length===0&&<p style={{fontSize:14,color:"var(--inkDim)"}}>Empty. For now.</p>}
+    {G.box.map((m,i)=><div key={m.uid} className="menurow"><span>{DEX[m.sp].name} Lv.{m.lvl}</span>
+      <Btn dis={G.party.length>=6} on={()=>setG(p=>({...p,box:p.box.filter((_,j)=>j!==i),party:[...p.party,m]}))}>Take</Btn></div>)}
+    <button className="btn press" style={{marginTop:8}} onClick={onClose}>Close</button></div>;
+}
+function CraftBox({G,setG,push,onClose}){
+  return <div className="fullov"><b className="silk" style={{fontSize:11}}>ROLLING STATION</b>
+    <p style={{fontSize:14,color:"var(--inkDim)"}}>Combine materials. The Annexe: blueprint for efficiency.</p>
+    {RECIPES.map((r,i)=>{const can=Object.entries(r.need).every(([id,n])=>(G.bag[id]||0)>=n);
+      return <div key={i} className="menurow"><span><b>{ITEMS[r.out].name}</b>
+        <div style={{fontSize:13,marginTop:2}}>{Object.entries(r.need).map(([id,n],j)=>{const have=G.bag[id]||0;
+          return <span key={id} style={{color:have>=n?"var(--send)":"var(--stamp)"}}>{j>0?" + ":""}{have}/{n} {ITEMS[id].name}</span>;})}</div></span>
+        <Btn dis={!can} on={()=>{setG(p=>{let bag={...p.bag};
+          Object.entries(r.need).forEach(([id,n])=>bag=addItem(bag,id,-n));
+          bag=addItem(bag,r.out,1);return {...p,bag};});sfx.coin();push("Crafted "+ITEMS[r.out].name+"!");}}>Roll</Btn></div>;})}
+    <button className="btn press" style={{marginTop:8}} onClick={onClose}>Close</button></div>;
+}
+function QuizBox({q,setQ,G,setG,push,onClose}){
+  const cur=q.qs[q.i];
+  if(q.i>=3){const won=q.ok===3;
+    return <div className="fullov" style={{textAlign:"center",paddingTop:60}}>
+      <p style={{fontSize:20}}>{q.ok}/3 correct.</p>
+      <p style={{fontSize:16}}>{won?"Full marks! No conferring, no mercy.":"The quizmaster shakes his head slowly."}</p>
+      {won&&!G.flags.quizdone&&<Btn on={()=>{setG(p=>checkAchv({...p,flags:{...p.flags,quizdone:true},coins:p.coins+150,
+        bag:addItem(p.bag,"glassbong",1)},push));push("+150 coins");push("Got Glass Bong!");onClose();}}>Claim prize</Btn>}
+      {(!won||G.flags.quizdone)&&<button className="btn press" style={{marginTop:10}} onClick={onClose}>Done</button>}</div>;}
+  return <div className="fullov"><b className="silk" style={{fontSize:11}}>QUIZ NIGHT — Q{q.i+1}/3</b>
+    <p style={{fontSize:18,margin:"10px 0"}}>{cur.q}</p>
+    {cur.a.map((a,i)=><button key={i} className="menurow press" style={{width:"100%",textAlign:"left"}}
+      onClick={()=>{const ok=i===cur.c;(ok?sfx.sel:sfx.back)();push(ok?"Correct!":"Wrong — "+cur.a[cur.c]);
+        setQ({...q,i:q.i+1,ok:q.ok+(ok?1:0)});}}>{a}</button>)}
+    <button className="btn press" style={{marginTop:8}} onClick={onClose}>Walk away</button></div>;
+}
+function GambleBox({g0,set,G,setG,push,onClose}){
+  const g=g0;
+  function guess(hi){
+    if(G.coins<g.bet&&g.pot===0){push("Need 10 coins to play.");return;}
+    const nxt=ri(2,14);
+    const win=hi?nxt>=g.card:nxt<=g.card;
+    if(g.pot===0)setG(p=>({...p,coins:p.coins-g.bet}));
+    if(win){const streak=g.streak+1,pot=(g.pot||g.bet)+g.bet*streak;sfx.coin();
+      if(streak>=5)setG(p=>checkAchv({...p,flags:{...p.flags,streak5:true}},push));
+      set({...g,card:nxt,streak,pot});}
+    else{sfx.back();push("Bust! The house (Bowden) wins.");set({...g,card:nxt,streak:0,pot:0});}
+  }
+  return <div className="fullov" style={{textAlign:"center"}}>
+    <b className="silk" style={{fontSize:11}}>BOWDEN'S BETS</b>
+    <p style={{fontSize:14,color:"var(--inkDim)"}}>Higher or lower. Streaks pay. No cap.</p>
+    <div style={{fontSize:56,margin:"14px 0",border:"3px solid var(--ink)",borderRadius:12,display:"inline-block",padding:"8px 26px",background:"#fff"}}>
+      {g.card===14?"A":g.card===13?"K":g.card===12?"Q":g.card===11?"J":g.card}</div>
+    <p style={{fontSize:16}}>Streak {g.streak} · Pot {g.pot}🪙 · Stake {g.bet}🪙 · You {G.coins}🪙</p>
+    <div style={{display:"flex",gap:8,justifyContent:"center",marginTop:8}}>
+      <Btn on={()=>guess(true)}>⬆ Higher</Btn><Btn col="var(--amber)" on={()=>guess(false)}>⬇ Lower</Btn>
+      <Btn col="var(--gold)" dis={g.pot===0} on={()=>{setG(p=>({...p,coins:p.coins+g.pot}));sfx.coin();push("Cashed out +"+g.pot+"!");set({...g,streak:0,pot:0});}}>💰 Cash out</Btn></div>
+    <button className="btn press" style={{marginTop:14}} onClick={onClose}>Leave table</button></div>;
+}
+function GolfBox({st,set,G,setG,push,onClose}){
+  const raf=useRef(null),val=useRef(0),dirR=useRef(1);
+  const [bar,setBar]=useState(0);
+  useEffect(()=>{
+    if(st.stage!=="power"&&st.stage!=="acc")return;
+    const speed=st.stage==="power"?2.2:3.4;
+    function tick(){val.current+=dirR.current*speed;
+      if(val.current>=100){val.current=100;dirR.current=-1;}
+      if(val.current<=0){val.current=0;dirR.current=1;}
+      setBar(val.current);raf.current=requestAnimationFrame(tick);}
+    raf.current=requestAnimationFrame(tick);
+    return()=>cancelAnimationFrame(raf.current);
+  },[st.stage]);
+  function lock(){
+    if(st.stage==="power"){set({...st,stage:"acc",power:val.current});val.current=0;dirR.current=1;}
+    else if(st.stage==="acc"){
+      const pErr=Math.abs((st.power||0)-80),aErr=Math.abs(val.current-50);
+      const great=pErr<10&&aErr<12, good=pErr<22&&aErr<25;
+      const strokes=great?2:good?3:4;
+      sfx.hit();push(great?"Pured it! Birdie!":good?"Solid par.":"Chunked it. Bogey.");
+      const shots=[...st.shots,strokes];
+      if(st.hole>=3){
+        const total=shots.reduce((a,b)=>a+b,0),par=9,diff=total-par;
+        const pay=Math.max(0,(par-total)*45)+(total<=par?35:0);
+        setG(p=>{let g2={...p,coins:p.coins+pay};
+          if(diff<0)g2.flags={...g2.flags,golfunder:true};
+          if(diff<=-3)g2.flags={...g2.flags,golf3under:true};
+          return checkAchv(g2,push);});
+        if(pay>0){sfx.coin();push("+"+pay+" coins!");}
+        set({...st,stage:"done",shots,total,diff});
+      } else set({...st,stage:"power",hole:st.hole+1,shots});
+    }
+  }
+  if(st.stage==="intro")return <div className="fullov" style={{textAlign:"center",paddingTop:40}}>
+    <b className="silk" style={{fontSize:11}}>STONELEES PAR 3 CHALLENGE</b>
+    <p style={{fontSize:16,margin:"10px 0"}}>3 holes, par 9. 20 coins entry. Stop the power bar near the sweet spot (80), then nail accuracy (50). Go 3-under and the Jacket will notice you.</p>
+    <Btn dis={G.coins<20} on={()=>{setG(p=>({...p,coins:p.coins-20}));set({...st,stage:"power"});}}>Tee up (20🪙)</Btn>
+    <div><button className="btn press" style={{marginTop:10,maxWidth:220}} onClick={onClose}>Not today</button></div></div>;
+  if(st.stage==="done")return <div className="fullov" style={{textAlign:"center",paddingTop:50}}>
+    <div style={{fontSize:40}}>⛳</div>
+    <p style={{fontSize:20}}>Round: {st.total} ({st.diff===0?"level par":st.diff>0?"+"+st.diff:st.diff})</p>
+    <p style={{fontSize:15,color:"var(--inkDim)"}}>{st.diff<=-3?"THE JACKET STIRS AT THE MASTERS ARENA.":st.diff<0?"Under par! Lovely stuff.":"The honesty box of golf: try again."}</p>
+    <button className="btn press" style={{marginTop:12,maxWidth:240}} onClick={onClose}>Clubhouse</button></div>;
+  return <div className="fullov" style={{textAlign:"center",paddingTop:40}}>
+    <b className="silk" style={{fontSize:11}}>HOLE {st.hole}/3 — {st.stage==="power"?"POWER":"ACCURACY"}</b>
+    <div style={{margin:"20px auto",width:"85%",height:26,border:"3px solid var(--ink)",borderRadius:8,position:"relative",background:"rgba(255,255,255,.4)"}}>
+      <div style={{position:"absolute",left:(st.stage==="power"?"72%":"42%"),width:(st.stage==="power"?"16%":"16%"),top:0,bottom:0,background:"rgba(55,181,126,.5)"}}/>
+      <div style={{position:"absolute",left:bar+"%",top:-4,bottom:-4,width:5,background:"var(--stamp)",borderRadius:2,transform:"translateX(-50%)"}}/></div>
+    <Btn on={lock} style={{fontSize:22,padding:"10px 30px"}}>SWING</Btn>
+    <p style={{fontSize:13,color:"var(--inkDim)",marginTop:10}}>Shots so far: {st.shots.join(", ")||"—"}</p></div>;
+}
+
+class ErrorBoundary extends React.Component{
+  constructor(p){super(p);this.state={err:null};}
+  static getDerivedStateFromError(err){return {err};}
+  componentDidCatch(err,info){console.error("Deal Dex crashed:",err,info);}
+  render(){
+    if(this.state.err){
+      return <div style={{padding:20,fontFamily:"monospace",fontSize:14,lineHeight:1.5,color:"var(--lcd)"}}>
+        <b style={{color:"var(--amber)",fontSize:16}}>Something went wrong mid-game.</b>
+        <p>Your save is safe — it's written to your browser each time you move or finish a battle.</p>
+        <pre style={{whiteSpace:"pre-wrap",color:"#e58",fontSize:12,maxHeight:240,overflow:"auto",background:"rgba(0,0,0,.25)",padding:8,borderRadius:6}}>{String(this.state.err&&(this.state.err.stack||this.state.err.message||this.state.err))}</pre>
+        <button className="btn press" style={{marginTop:10,maxWidth:220}} onClick={()=>location.reload()}>Reload &amp; Continue</button>
+      </div>;
+    }
+    return this.props.children;
+  }
+}
+ReactDOM.createRoot(document.getElementById("root")).render(<ErrorBoundary><App/></ErrorBoundary>);
+</script>
+<script>
+(function(){
+  var _fitting=false;
+  function fitShell(){
+    var el=document.querySelector('.shell');
+    if(!el||_fitting)return;
+    _fitting=true; // guard: our own transform change would otherwise retrigger the observer
+    el.style.transform='none';
+    el.style.marginBottom='0px';
+    var rect=el.getBoundingClientRect();
+    var availW=window.innerWidth, availH=window.innerHeight;
+    var scale=Math.min(1,(availW-8)/rect.width,(availH-8)/rect.height);
+    el.style.transformOrigin='top center';
+    el.style.transform='scale('+scale+')';
+    el.style.marginBottom=((scale-1)*rect.height)+'px';
+    requestAnimationFrame(function(){_fitting=false;});
+  }
+  window.__fitShell=fitShell;
+  window.addEventListener('resize',fitShell);
+  window.addEventListener('orientationchange',function(){setTimeout(fitShell,120);});
+  // Re-fit continuously whenever the shell's content changes size (entering a game, menus, battles).
+  function watchShell(){
+    var el=document.querySelector('.shell');
+    if(!el){setTimeout(watchShell,120);return;}
+    if(window.ResizeObserver){ new ResizeObserver(function(){fitShell();}).observe(el); }
+    fitShell();
+  }
+  window.addEventListener('DOMContentLoaded',watchShell);
+  setTimeout(watchShell,0); setTimeout(fitShell,150); setTimeout(fitShell,400); setTimeout(fitShell,900);
+  function boot(){
+    var root=document.getElementById('root');
+    function fail(t,d){root.innerHTML='<div style="max-width:min(520px,90vw);margin:24px auto;padding:16px;background:#123329;color:#bcd6a6;border-radius:12px;font-family:monospace;font-size:14px;line-height:1.5"><b style="color:#e0a53c;font-size:16px">Deal Dex could not start</b><br><br>'+t+(d?'<pre style="white-space:pre-wrap;color:#e58;margin-top:12px;font-size:12px;max-height:300px;overflow:auto">'+String(d).replace(/</g,"&lt;")+'</pre>':'')+'</div>';}
+    if(!window.React||!window.ReactDOM){return fail('The React library did not load. This game needs an internet connection the first time it runs. If you double-clicked the file, some browsers block CDN scripts over file:// \u2014 host it (e.g. drag the folder onto app.netlify.com/drop) or try another browser.');}
+    if(!window.Babel){return fail('The Babel compiler did not load (needs internet on first load).');}
+    var src=document.getElementById('gamesrc').textContent, out;
+    try{ out=Babel.transform(src,{presets:['react']}).code; }
+    catch(e){ return fail('There was a problem compiling the game:',(e&&e.message)||e); }
+    try{ (0,eval)(out); }
+    catch(e){ return fail('There was a problem starting the game:',(e&&(e.stack||e.message))||e); }
+  }
+  if(document.readyState!=='loading') setTimeout(boot,0);
+  else window.addEventListener('DOMContentLoaded',boot);
+})();
+</script>
+</body>
+</html>
