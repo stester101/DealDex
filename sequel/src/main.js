@@ -1,0 +1,10 @@
+import {createGame} from './world.js';
+const canvas=document.querySelector('#game'),ctx=canvas.getContext('2d');ctx.imageSmoothingEnabled=false;
+const msg=document.querySelector('#message'),place=document.querySelector('#place'),panel=document.querySelector('#panel'),body=document.querySelector('#panel-body');
+const game=createGame({ctx,canvas,message:s=>msg.textContent=s,place:s=>place.textContent=s});
+document.querySelectorAll('[data-dir]').forEach(b=>{const d=b.dataset.dir;b.addEventListener('pointerdown',e=>{e.preventDefault();game.move(d)});});
+document.addEventListener('keydown',e=>{const dirs={ArrowUp:'up',ArrowDown:'down',ArrowLeft:'left',ArrowRight:'right',w:'up',s:'down',a:'left',d:'right'};if(dirs[e.key]){e.preventDefault();game.move(dirs[e.key])}if(e.key==='Enter'||e.key===' ')game.action();if(e.key==='Escape')panel.close()});
+document.querySelector('#a').onclick=()=>game.action();document.querySelector('#b').onclick=()=>game.back();
+document.querySelector('#menu').onclick=()=>{document.querySelector('#panel-title').textContent='FIELD MENU';body.innerHTML=game.menu();panel.showModal();body.querySelectorAll('[data-action]').forEach(b=>b.onclick=()=>{game.command(b.dataset.action);panel.close()})};
+document.querySelector('#close').onclick=()=>panel.close();
+game.start();
